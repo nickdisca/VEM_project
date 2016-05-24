@@ -34,7 +34,7 @@ public:
     	if (mm.first==mm2.first) return mm.second<mm2.second;
     	return mm.first<mm2.first;
     };
-    friend ostream & operator << (ostream & ost, Edge const & e){
+    friend ostream & operator << (ostream & ost, Edge const &e){
     	ost<<e.a<<" "<<e.b<<endl;
     	return ost;
     };

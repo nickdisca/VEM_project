@@ -78,25 +78,21 @@ namespace Geometry
  
   //! Polygon vertices are just vectors of points.
   using Vertices=std::vector<Point2D>;
-  //! The vector that stores the position is a std::vector of unsigned int
-  using PosVector=std::vector<unsigned int>;
 
   //! Defines the common interface of polygons.
   class AbstractPolygon
   {
   public:
-    //! Constructor taking index of the vertexes and the vector containing the coordinates
+    //! Constructor taking vertices
     /*! 
       It checks convexity if check=true
      */
-    AbstractPolygon(PosVector const & v, Vertices * p, bool check=true);
+    AbstractPolygon(Vertices const & v, bool check=true);
     //! Default constructor is defaulted
     /*! 
       It is up to the derived classes to fill the vertexex and other info correctly
     */
     AbstractPolygon()=default;
-     // Force the default constructor (just to be sure that the pointer is the nullptr)
-    //AbstractPolygon():position(),pointer(nullptr),isconvex(false){};
     //! Assignment
     AbstractPolygon & operator=(AbstractPolygon const&)=default;
     //! Copy constructor
@@ -115,13 +111,11 @@ namespace Geometry
       guaranteed to be an integral type, more precisely
       a type convertible to unsigned int).
     */
-    unsigned int size() const {return position.size();}
+    Vertices::size_type size() const {return vertexes.size();}
     //! Is the polygon convex?
     bool isConvex() const {return isconvex;}
-    //! Returns the index of the vertices (read only)
-    PosVector const & theVertices()const {return position;}
-    //! Prints the coordinates of the verteces
-    //virtual void printCoord() const;
+    //! Returns the vertices (read only)
+    Vertices const & theVertices()const {return vertexes;}
     //! Outputs some info on the polygon
     virtual void showMe(std::ostream & out=std::cout) const;
     //! The area of the polygon (with sign!).
@@ -131,9 +125,7 @@ namespace Geometry
     */
     virtual double area() const=0;
   protected:
-    //Vertices vertexes;
-    PosVector position;
-    Vertices * pointer;
+    Vertices vertexes;
     bool isconvex;
     //! Test convexity of the polygon
     void checkConvexity();
@@ -149,7 +141,7 @@ namespace Geometry
   public:
     //! Default constructor.
     //! Polygon may be constructed giving Vertices;
-    Polygon(PosVector const & v, Vertices * p);
+    Polygon(Vertices const & v);
     //! Destructor
     virtual ~Polygon(){};
     /*!
@@ -168,15 +160,14 @@ namespace Geometry
   class Square final: public AbstractPolygon
   {
   public:
-    Square(PosVector const & v, Vertices *p);
+    Square(Vertices const & v);
     //!Special constructor valid only for squares.
     /*!
       /param origin Point which gives the first vertex of the square.
       /param length The length of the side.
       /param angle In radians, tells how the square is  rotated. 
      */
-    //Since we consider only points of a grid, this constructor is nonsense
-    //Square(unsigned int origin, double length,double angle=0.0);
+    Square(Point2D origin, double length,double angle=0.0);
     Square(Square const &)=default;
     Square(Square&&)=default;
     Square & operator=(const Square &)=default;
@@ -191,7 +182,7 @@ namespace Geometry
   class Triangle final: public AbstractPolygon
   {
   public:
-    Triangle(PosVector const &, Vertices * p);
+    Triangle(Vertices const &);
     Triangle(Triangle const &)=default;
     Triangle(Triangle&&)=default;
     Triangle & operator=(const Triangle &)=default;

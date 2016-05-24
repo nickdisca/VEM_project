@@ -11,6 +11,7 @@ set<Edge> insieme, interni;
 Edge e;
 double i1,i2;
 vector<unsigned int> lati;
+vector<Point2D> vvv;
 pair<set<Edge>::iterator,bool> check;
 
 //read the first line
@@ -42,9 +43,9 @@ for (unsigned int i=0; i<Npoly; i++){
 	getline(ss,aux,' ');
 	getline(ss,aux,' ');
 	tipo=stoi(aux);
-	lati.clear();
+	vvv.clear(); lati.clear();
 	while (getline(ss,aux,' ')){
-		//vvv.emplace_back(vect[stoi(aux)]);
+		vvv.emplace_back(vect[stoi(aux)]);
 		lati.emplace_back(stoi(aux));
 		//cout<<stoi(aux)<<endl;
 	}
@@ -61,9 +62,10 @@ for (unsigned int i=0; i<Npoly; i++){
 
 	//build the vector of smart pointers
 	switch(tipo){
-		case(0): {Triangle t(lati, &vect); abspol.emplace_back(make_shared<Triangle> (t)); t.showMe(); cout<<"Area"<<t.area()<<endl;} break;
-		case(1): {Square s(lati, &vect); abspol.emplace_back(make_shared<Square> (s)); s.showMe(); cout<<"Area"<<s.area()<<endl;} break;
-		default: {Polygon p(lati, &vect); abspol.emplace_back(make_shared<Polygon> (p)); p.showMe(); cout<<"Area"<<p.area()<<endl;}
+		//case(0): {Triangle t(vvv); abspol.emplace_back(make_shared<Triangle> (t));} break;
+		case(0): {abspol.emplace_back(make_shared<Triangle> (Triangle(vvv)));} break;
+		case(1): {abspol.emplace_back(make_shared<Square> (Square(vvv)));} break;
+		default: {abspol.emplace_back(make_shared<Polygon> (Polygon(vvv)));}
 	}
 }
 

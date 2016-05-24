@@ -39,6 +39,10 @@ int main()
   r_ab.showMe();
   std::cout<<"Area: "<<r_ab.area()<<std::endl;
 */
+  //check that the default constructor works
+  Grid F;
+  cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
+  cout<<"Area totale: "<<F.area()<<endl<<endl;
 
   //construction of a grid reading from the given file
   std::ifstream file("mesh.dat");
@@ -48,20 +52,23 @@ int main()
   file.close();
 
   //check that the copy constructor works
-  //Grid H(G);
-  //cout<<"Numero di poligoni nella griglia: "<<H.grid_size()<<endl;
-  //cout<<"Area totale: "<<H.area()<<endl<<endl;
+  Grid H(G);
+  cout<<"Numero di poligoni nella griglia: "<<H.grid_size()<<endl;
+  cout<<"Area totale: "<<H.area()<<endl<<endl;
+
+  //check that the assignment operator works
+  F=H;
+  cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
+  cout<<"Area totale: "<<F.area()<<endl<<endl;
 
   //print the edges on the screen, just for simplicity
-  G.printedges();
+  F.printedges();
 
   //print the indexes of the edges in 3 separate files
   ofstream out1("AllEdges.dat");
   ofstream out2("BoundaryEdges.dat");
   ofstream out3("InternalEdges.dat");
-  G.printedgesIndex(out1,out2,out3);
-
-  return 0;
+  F.printedgesIndex(out1,out2,out3);
 }
   
 
