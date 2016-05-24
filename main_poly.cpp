@@ -1,6 +1,7 @@
 #include "Polygon.hpp"
 #include "grid.hpp"
 #include "edge.hpp"
+#include "matrix.hpp"
 #include <iostream>
 #include <fstream>
 //! Main program
@@ -31,11 +32,18 @@ int main()
   vv[2]={1.0,1.0};
   vv[3]={0.0,1.0};
 
-  Polygon aSquare(vv);
+  Square aSquare(vv);
   aSquare.showMe();
   std::cout<<"Area: "<<aSquare.area()<<std::endl;
   std::cout<<"Centroid: "<<aSquare.Centroid().x()<<" "<<aSquare.Centroid().y()<<std::endl;
   std::cout<<"Diameter: "<<aSquare.Diameter()<<std::endl;
+
+  MyMatrix A(5,5);
+  A(1,1)=3.0; A(2,2)=5.0; A(3,3)=6.0;
+  cout<<"My matrix is"<<endl<<A;
+  MyMatrix B(A);
+  MyMatrix C; C=A;
+  //cout<<B<<C;
 
   /*
   //check that the default constructor works

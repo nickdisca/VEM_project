@@ -86,7 +86,7 @@ namespace Geometry{
     Point2D AbstractPolygon::Centroid() const{
     Point2D C{0.0,0.0};
     double x=0.0,y=0.0;
-    for (int i=0; i<vertexes.size()-1; i++){
+    for (unsigned int i=0; i<vertexes.size()-1; i++){
       x+=(vertexes[i].x()+vertexes[i+1].x())*(vertexes[i].x()*vertexes[i+1].y()-vertexes[i+1].x()*vertexes[i].y());
       y+=(vertexes[i].y()+vertexes[i+1].y())*(vertexes[i].x()*vertexes[i+1].y()-vertexes[i+1].x()*vertexes[i].y());
     }
@@ -98,8 +98,8 @@ namespace Geometry{
 
     double AbstractPolygon::Diameter() const{
       double d{0.0};
-    for (int i=0; i<vertexes.size()-1; i++){
-      for (int j=0; j<vertexes.size(); j++)
+    for (unsigned int i=0; i<vertexes.size()-1; i++){
+      for (unsigned int j=0; j<vertexes.size(); j++)
         d=std::max(d,distance(vertexes[i],vertexes[j]));
     }
     return d;
