@@ -24,6 +24,19 @@ int main()
   std::cout<<"Centroid: "<<aPolygon.Centroid().x()<<" "<<aPolygon.Centroid().y()<<std::endl;
   std::cout<<"Diameter: "<<aPolygon.Diameter()<<std::endl;
 
+  Vertices vv(4);
+
+  vv[0]={0.0,0.0};
+  vv[1]={1.0,0.0};
+  vv[2]={1.0,1.0};
+  vv[3]={0.0,1.0};
+
+  Polygon aSquare(vv);
+  aSquare.showMe();
+  std::cout<<"Area: "<<aSquare.area()<<std::endl;
+  std::cout<<"Centroid: "<<aSquare.Centroid().x()<<" "<<aSquare.Centroid().y()<<std::endl;
+  std::cout<<"Diameter: "<<aSquare.Diameter()<<std::endl;
+
   /*
   //check that the default constructor works
   Grid F;
