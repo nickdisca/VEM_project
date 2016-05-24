@@ -5,25 +5,8 @@
 #include <array>
 #include <utility>
 
-/*!  @file Polygon.hpp 
-  @brief This is an example of class hierarchy that
-  represents poligonal object.
-
-  @detail This module is wrapped in the namespace `Geometry`. It
-  represent a first example of class hyerarchy with public
-  inheritance. The class `AbstractPolygon` defines the general public
-  interface of all other classes representing polygonal objects.
-  
-  We make use of some syntax of the C++11 new standard so you need to
-  compile with *-std=c++11*
-   */
 namespace Geometry
 {
-  
-
-  //! A class that holds 2D points
-  /*! It also represents a vector in R2
-   */
   class Point2D
   {
   public:
@@ -53,21 +36,13 @@ namespace Geometry
   //! An alias
   using R2Vector=Point2D;
 
-  //! subtraction operator.
-  /*!  
-    It is defined in the header file because I want it to be
-    inline.
-  */
+  //! subtraction operator (inline)
   inline Point2D operator - (Point2D const & a, Point2D const & b){
     return Point2D(a.coor[0]-b.coor[0],
                    a.coor[1]-b.coor[1]);
   }
 
-  //! Addition operator.
-  /*!  
-    It is defined in the header file because I want it to be
-    inline.
-  */
+  //! Addition operator (inline)
   inline Point2D operator + (Point2D const & a, Point2D const & b){
     return Point2D(a.coor[0]+b.coor[0],
                    a.coor[1]+b.coor[1]);
@@ -124,11 +99,16 @@ namespace Geometry
       The implementation is left to the derived classes.
     */
     virtual double area() const=0;
+    //! The centroid of the polygon
+    Point2D Centroid() const;
+    //! The diameter of the polygon
+    double Diameter() const;
   protected:
     Vertices vertexes;
     bool isconvex;
     //! Test convexity of the polygon
     void checkConvexity();
+    
   };
 
   //! Class for a generic Polygon
@@ -151,6 +131,7 @@ namespace Geometry
     virtual double area() const;
     //! Specialised version for generic polygons.
     virtual void showMe(std::ostream & out=std::cout) const;
+
   };
 
   //! A square
@@ -188,7 +169,7 @@ namespace Geometry
     Triangle & operator=(const Triangle &)=default;
     Triangle & operator=(Triangle &&)=default;
     //! Specialised for Triangles
-    virtual double area() const;
+    double area() const;
     //! Specialised for Triangles
     virtual void showMe(std::ostream & out=std::cout) const;
   };

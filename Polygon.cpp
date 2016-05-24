@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 #include <limits>
 namespace Geometry{
   
@@ -81,6 +82,28 @@ namespace Geometry{
     this->isconvex=true;
     return;
   }
+
+    Point2D AbstractPolygon::Centroid() const{
+    Point2D C{0.0,0.0};
+    double x=0.0,y=0.0;
+    for (int i=0; i<vertexes.size()-1; i++){
+      x+=(vertexes[i].x()+vertexes[i+1].x())*(vertexes[i].x()*vertexes[i+1].y()-vertexes[i+1].x()*vertexes[i].y());
+      y+=(vertexes[i].y()+vertexes[i+1].y())*(vertexes[i].x()*vertexes[i+1].y()-vertexes[i+1].x()*vertexes[i].y());
+    }
+    x=x/(6*area());
+    y=y/(6*area());
+    C.set(x,y);
+    return C;
+  }
+
+    double AbstractPolygon::Diameter() const{
+      double d{0.0};
+    for (int i=0; i<vertexes.size()-1; i++){
+      for (int j=0; j<vertexes.size(); j++)
+        d=std::max(d,distance(vertexes[i],vertexes[j]));
+    }
+    return d;
+  }
   
   
   
@@ -113,6 +136,7 @@ namespace Geometry{
     }
     return 0.5*result;
   }
+
   
   void Polygon::showMe(std::ostream & out)const
   {
