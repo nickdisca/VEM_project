@@ -1,7 +1,7 @@
-./main_poly
+/main_poly
 
 # generated documentation
-./*/doc/*
+#/*/doc/*
 
 # configuration files
 # Examples/Makefile.inc

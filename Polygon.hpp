@@ -103,6 +103,9 @@ namespace Geometry
     Point2D Centroid() const;
     //! The diameter of the polygon
     double Diameter() const;
+
+    Vertices BoundaryDof(int k) const;
+
   protected:
     Vertices vertexes;
     bool isconvex;

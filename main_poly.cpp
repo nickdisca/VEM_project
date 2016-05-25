@@ -45,6 +45,16 @@ int main()
   MyMatrix C; C=A;
   //cout<<B<<C;
 
+  std::vector<Point2D> BD1=aPolygon.BoundaryDof(1);
+  std::cout<<"Case k=1:"<<std::endl;
+  for (unsigned int i=0; i<BD1.size(); i++)
+  	std::cout<<BD1[i].x()<<" "<<BD1[i].y()<<std::endl;
+
+  std::vector<Point2D> BD2=aPolygon.BoundaryDof(2);
+  std::cout<<"Case k=2:"<<std::endl;
+  for (unsigned int i=0; i<BD2.size(); i++)
+  	std::cout<<BD2[i].x()<<" "<<BD2[i].y()<<std::endl;
+
   /*
   //check that the default constructor works
   Grid F;
