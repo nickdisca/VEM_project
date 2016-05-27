@@ -105,6 +105,7 @@ namespace Geometry
     double Diameter() const;
 
     Vertices BoundaryDof(int k) const;
+    //std::vector<std::array<int,2> > Polynomials(int k) const;
 
   protected:
     Vertices vertexes;

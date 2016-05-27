@@ -1,6 +1,7 @@
 #include "Polygon.hpp"
 #include "grid.hpp"
 #include "edge.hpp"
+#include "vem.hpp"
 #include "matrix.hpp"
 #include <iostream>
 #include <fstream>
@@ -55,6 +56,16 @@ int main()
   for (unsigned int i=0; i<BD2.size(); i++)
   	std::cout<<BD2[i].x()<<" "<<BD2[i].y()<<std::endl;
 
+  std::vector<Point2D> BD3=aPolygon.BoundaryDof(3);
+  std::cout<<"Case k=3:"<<std::endl;
+  for (unsigned int i=0; i<BD3.size(); i++)
+  	std::cout<<BD3[i].x()<<" "<<BD3[i].y()<<std::endl;
+
+  std::vector<std::array<int,2> > degree1=Polynomials(1);
+  std::cout<<std::endl;
+  std::vector<std::array<int,2> > degree2=Polynomials(2);
+  std::cout<<std::endl;
+  std::vector<std::array<int,2> > degree3=Polynomials(3);
   /*
   //check that the default constructor works
   Grid F;

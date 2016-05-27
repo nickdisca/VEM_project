@@ -15,3 +15,14 @@ Vertices AbstractPolygon::BoundaryDof(int k) const {
 	}
 	return vect;
 };
+
+vector<array<int,2> > Polynomials(int k) {
+	vector<array<int,2> > degree;
+	for (int i=0; i<=k; i++) {
+		for (int j=i; j>=0; j--){
+			degree.push_back(array<int,2>{{j,i-j}});
+			cout<<"{ "<<j<<" , "<<i-j<<" }"<<endl;
+		}
+	}
+return degree;
+} 

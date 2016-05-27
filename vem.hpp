@@ -12,7 +12,7 @@
 #include <set>
 #include <algorithm>
 
-
+vector<array<int,2> > Polynomials(int k);
 
 
 
