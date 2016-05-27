@@ -1,6 +1,7 @@
 #include "vem.hpp"
 
 using namespace std;
+using namespace Geometry;
 
 Vertices AbstractPolygon::BoundaryDof(int k) const {
 	Vertices vect(vertexes.size()*(k-1),0.0);
@@ -26,3 +27,27 @@ vector<array<int,2> > Polynomials(int k) {
 	}
 return degree;
 } 
+
+MyMatrix AbstractPolygon::ComputeD(int k) {
+	MyMatrix D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
+	cout<<"Created matrix D with size "<<D.GetRows()<<" x "<<D.GetCols()<<endl;
+
+	Vertices BD=BoundaryDof(k);
+	vector<array<int,2> > degree=Polynomials(k);
+  	
+
+	for (unsigned int j=0; j<D.GetCols(); j++) {
+		for (unsigned int i=0; i<D.GetRows(); i++){
+			array<int,2> actualdegree=degree[j];
+			auto f=[=] (double x,double y)	
+				{return pow((x-Centroid().x())/(Diameter()),actualdegree[0])*pow((y-Centroid().y())/(Diameter()),actualdegree[1]);};
+
+			if (i<vertexes.size()) D(i,j)=f(vertexes[i].x(),vertexes[i].y());
+			if (i>=vertexes.size() && i<vertexes.size()*2) {D(i,j)=f(BD[i-vertexes.size()].x(),BD[i-vertexes.size()].y());}
+			if (i==vertexes.size()*2) D(i,j)=-1.0;
+		}
+	}
+
+
+	return D;
+}

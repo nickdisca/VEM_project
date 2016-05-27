@@ -1,5 +1,6 @@
 #ifndef HH_POLYGON_HH
 #define HH_POLYGON_HH
+#include "matrix.hpp"
 #include <iostream>
 #include <vector>
 #include <array>
@@ -106,6 +107,7 @@ namespace Geometry
 
     Vertices BoundaryDof(int k) const;
     //std::vector<std::array<int,2> > Polynomials(int k) const;
+    MyMatrix ComputeD(int k);
 
   protected:
     Vertices vertexes;

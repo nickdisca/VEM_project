@@ -66,6 +66,15 @@ int main()
   std::vector<std::array<int,2> > degree2=Polynomials(2);
   std::cout<<std::endl;
   std::vector<std::array<int,2> > degree3=Polynomials(3);
+  std::cout<<std::endl;
+
+  std::vector<Point2D> BDS2=aSquare.BoundaryDof(2);
+  std::cout<<"Case k=2:"<<std::endl;
+  for (unsigned int i=0; i<BDS2.size(); i++)
+  std::cout<<BDS2[i].x()<<" "<<BDS2[i].y()<<std::endl;
+
+  MyMatrix D=aSquare.ComputeD(2);
+  std::cout<<"Matrix D: "<<std::endl<<D<<std::endl;
   /*
   //check that the default constructor works
   Grid F;

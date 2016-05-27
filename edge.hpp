@@ -11,7 +11,7 @@
 #include <sstream>
 #include <iterator>
 
-using namespace Geometry;
+//using namespace Geometry;
 using namespace std;
 
 class Edge {

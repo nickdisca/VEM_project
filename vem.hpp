@@ -1,7 +1,8 @@
 #ifndef HH_VEM_HH
 #define HH_VEM_HH
 #include "Polygon.hpp"
-#include "edge.hpp"
+//#include "edge.hpp"
+//#include "matrix.hpp"
 #include <iostream>
 #include <vector>
 #include <array>

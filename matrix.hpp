@@ -1,7 +1,7 @@
 #ifndef HH_MATRIX_HH
 #define HH_MATRIX_HH
-#include "Polygon.hpp"
-#include "edge.hpp"
+//#include "Polygon.hpp"
+//#include "edge.hpp"
 #include <iostream>
 #include <vector>
 #include <array>
@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <Eigen/Dense>
 
-using namespace Geometry;
+//using namespace Geometry;
 using namespace std;
 using namespace Eigen;
 
@@ -36,7 +36,7 @@ public:
 	friend ostream & operator<< (ostream & out, MyMatrix const & m){
 		for(unsigned int i=0; i<m.GetRows(); i++){
 			for (unsigned int j=0; j<m.GetCols(); j++)
-				out<<m(i,j);
+				out<<m(i,j)<<"\t";
 			out<<endl;
 		}
 		return out;
