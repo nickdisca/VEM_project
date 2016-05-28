@@ -74,7 +74,7 @@ int main()
   std::cout<<"Matrix D: "<<std::endl<<D<<std::endl;
 
   MyMatrix B=aSquare.ComputeB(2);
-  //std::cout<<"Matrix B: "<<std::endl<<B<<std::endl;
+  std::cout<<"Matrix B: "<<std::endl<<B<<std::endl;
 
   /*
   //check that the default constructor works

@@ -87,8 +87,9 @@ MyMatrix AbstractPolygon::ComputeD(int k) {
 MyMatrix AbstractPolygon::ComputeB(int k){
 	MyMatrix B((k+2)*(k+1)/2,vertexes.size()*k+k*(k-1)/2);
 	cout<<"Created matrix B with size "<<B.GetRows()<<" x "<<B.GetCols()<<endl;
+	Vertices BD=BoundaryDof(k);
 	vector<array<int,2> > degree=Polynomials(k);
-	B(0,B.GetCols()-1)=1.0;
+
 	for (unsigned int j=0; j<B.GetCols()-1; j++) {
 		for (unsigned int i=1; i<B.GetRows(); i++){
 			array<int,2> actualdegree=degree[i];
@@ -97,20 +98,29 @@ MyMatrix AbstractPolygon::ComputeB(int k){
 			auto fy=[=] (double xx,double yy)	
 {return actualdegree[1]/Diameter()*pow((xx-Centroid().x())/(Diameter()),actualdegree[0])*pow((yy-Centroid().y())/(Diameter()),max(actualdegree[1]-1,0));};
 			
-
-			B(i,j)=(Normal(j+1).x()*fx(vertexes[j].x(),vertexes[j].y())+
-				Normal(j+1).y()*fy(vertexes[j].x(),vertexes[j].y()))*IntegralWithDof(k,j+1,0);
-			cout<<"B("<<i<<","<<j<<")="<<B(i,j)<<endl;
+			if (j<vertexes.size()){
+			B(i,j)=(Normal(j+1).x()*fx(vertexes[j].x(),vertexes[j].y())+Normal(j+1).y()*fy(vertexes[j].x(),vertexes[j].y()))*IntegralWithDof(k,j+1,0);
+			//cout<<"B("<<i<<","<<j<<")="<<B(i,j)<<endl;
 			int next=(j==0 ? vertexes.size() : j);
 			B(i,j)+=((Normal(next).x()*fx(vertexes[next%(vertexes.size())].x(),vertexes[next%(vertexes.size())].y())+
 				Normal(next).y()*fy(vertexes[next%(vertexes.size())].x(),vertexes[next%(vertexes.size())].y()))*IntegralWithDof(k,next,2));
-		
-			cout<<"B("<<i<<","<<j<<")="<<B(i,j)<<endl;
+			}
+			else {
+				double jj=j%vertexes.size();
+			B(i,j)=(Normal(jj+1).x()*fx(BD[jj].x(),BD[jj].y())+Normal(jj+1).y()*fy(BD[jj].x(),BD[jj].y()))*
+			IntegralWithDof(k,jj+1,1);
+			}
 
 
 		}
 	}
-	for (unsigned int i=0; i<B.GetRows(); i++) B(i,B.GetCols()-1)=-1.0;
+
+	B(0,B.GetCols()-1)=1.0;
+	for (unsigned int i=1; i<B.GetRows(); i++) {
+		array<int,2> actualdegree=degree[i];
+		if (actualdegree[0]<=1 || actualdegree[1]<=1) B(i,B.GetCols()-1)=0.0;
+		if (i==3 || i==5) B(i,B.GetCols()-1)=-area()*2/2;
+	}
 
 return B;
 }
