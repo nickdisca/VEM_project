@@ -42,9 +42,6 @@ int main()
   MyMatrix A(5,5);
   A(1,1)=3.0; A(2,2)=5.0; A(3,3)=6.0;
   cout<<"My matrix is"<<endl<<A;
-  MyMatrix B(A);
-  MyMatrix C; C=A;
-  //cout<<B<<C;
 
   std::vector<Point2D> BD1=aPolygon.BoundaryDof(1);
   std::cout<<"Case k=1:"<<std::endl;
@@ -75,6 +72,10 @@ int main()
 
   MyMatrix D=aSquare.ComputeD(2);
   std::cout<<"Matrix D: "<<std::endl<<D<<std::endl;
+
+  MyMatrix B=aSquare.ComputeB(2);
+  //std::cout<<"Matrix B: "<<std::endl<<B<<std::endl;
+
   /*
   //check that the default constructor works
   Grid F;

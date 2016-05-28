@@ -108,7 +108,10 @@ namespace Geometry
     Vertices BoundaryDof(int k) const;
     //std::vector<std::array<int,2> > Polynomials(int k) const;
     MyMatrix ComputeD(int k);
+    MyMatrix ComputeB(int k);
     double ComputeIntegral(int k, int d1, int d2);
+    double IntegralWithDof(int k, int edge, int phi);
+    Point2D Normal(int edge);
 
   protected:
     Vertices vertexes;
