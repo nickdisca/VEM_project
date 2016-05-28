@@ -28,6 +28,16 @@ vector<array<int,2> > Polynomials(int k) {
 return degree;
 } 
 
+double AbstractPolygon::ComputeIntegral(int k, int d1, int d2) {
+	double value;
+	if (d1==0 && d2==0) return 1.0;
+	if ((d1+d2)%2==1) return 0.0;
+	if (d1==2 && d2==0) return 1.0/24;
+	if (d1==0 && d2==2) return 1.0/24;
+	if (d1==1 && d2==1) return 0.0;
+	return value;
+}
+
 MyMatrix AbstractPolygon::ComputeD(int k) {
 	MyMatrix D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
 	cout<<"Created matrix D with size "<<D.GetRows()<<" x "<<D.GetCols()<<endl;
@@ -44,7 +54,7 @@ MyMatrix AbstractPolygon::ComputeD(int k) {
 
 			if (i<vertexes.size()) D(i,j)=f(vertexes[i].x(),vertexes[i].y());
 			if (i>=vertexes.size() && i<vertexes.size()*2) {D(i,j)=f(BD[i-vertexes.size()].x(),BD[i-vertexes.size()].y());}
-			if (i==vertexes.size()*2) D(i,j)=-1.0;
+			if (i>=vertexes.size()*2) D(i,j)=ComputeIntegral(k,actualdegree[0],actualdegree[1]);
 		}
 	}
 
