@@ -25,13 +25,15 @@ class Grid
 
     double area();
     unsigned int grid_size(){return abspol.size();};
-    void printedges();
-    void printedgesIndex(ofstream & ost1, ofstream & ost2, ofstream & ost3);
+    unsigned int boundary_size() {return boundary.size();};
+    unsigned int vertices_size() {return coord.size();};
+    //void printedges();
+    //void printedgesIndex(ofstream & ost1, ofstream & ost2, ofstream & ost3);
 
   private:
-    std::vector<Point2D> vect;
+    std::vector<Point2D> coord;
     std::vector<std::shared_ptr<AbstractPolygon> > abspol;
-    std::vector<Edge> AllEdges,Boundary;
+    std::vector<unsigned int> boundary;
   };
 
   #endif

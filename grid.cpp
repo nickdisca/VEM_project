@@ -4,25 +4,56 @@
 using namespace Geometry;
 using namespace std;
 
+//    std::vector<Point2D> coord;
+//    std::vector<std::shared_ptr<AbstractPolygon> > abspol;
+//    std::vector<unsigned int> boundary;
+
 Grid::Grid(ifstream & file){
-string str,aux;
-unsigned int Npoly=0,Nvert=0,tipo=0;
-set<Edge> insieme, interni;
-Edge e;
-double i1,i2;
-vector<unsigned int> lati;
-vector<Point2D> vvv;
-pair<set<Edge>::iterator,bool> check;
+string str;
 
-//read the first line
-getline(file,str);
-stringstream ss(str);
-//getline(ss,aux,' '); Nvert=stoi(aux); getline(ss,aux,' '); Npoly=stoi(aux);
-ss>>Nvert>>Npoly;
-//cout<<Nvert<<"   "<<Npoly<<endl;
+//reads coordinates of the vertexes
+while (1){
+	streampos oldpos=file.tellg();
+	getline(file,str);
+	stringstream ss(str);
+	double X,Y;
+	ss>>X>>Y;
+	char cha;
+	ss>>cha;
+	if (!ss.eof()) {cout<<"Arrived at number "<<coord.size()<<endl; file.seekg(oldpos); break;}
+	coord.push_back(Point2D{X,Y});
+	cout<<coord.size()<<endl;
+}
 
-vect.resize(Nvert);
+//reads connectivity matrix
+while(1){
+	streampos oldpos=file.tellg();
+	getline(file,str);
+	stringstream ss(str);
+	std::vector<unsigned int> line;
+	unsigned int d;
+	//char cha;
+	while (!ss.eof()) {ss>>d; line.push_back(d);}
+	line.pop_back();
 
+	if (line.size()<=1) {cout<<"Arrived at number "<<abspol.size()<<endl; file.seekg(oldpos); break;}
+
+	vector<Point2D> p;
+	for (unsigned int j=0; j<line.size(); j++) p.push_back(Point2D(coord[line[j]-1]));
+	abspol.push_back(make_shared<Polygon>(Polygon(p)));
+	Polygon(p).showMe();
+	//cout<<"Arrived at polygon"<<abspol.size()<<endl;
+	//cout<<line[0]<<" "<<line[1]<<" "<<line[2]<<line[3]<<endl;
+}
+
+//reads boundary elements
+//int i=0;
+while (getline(file,str)){
+	boundary.push_back(stoi(str));
+	//cout<<boundary[i]<<endl; i++;
+}
+
+/*
 //coordinates of the vertexes
 for (unsigned int i=0; i<Nvert; i++){
 	getline(file,str);
@@ -77,7 +108,13 @@ copy(insieme.begin(),insieme.end(),AllEdges.begin());
 Boundary.resize(insieme.size()-interni.size());
 set_difference(insieme.begin(), insieme.end(),interni.begin(),interni.end(),Boundary.begin());
 //set_difference(insieme.begin(), insieme.end(),interni.begin(),interni.end(),back_inserter(Boundary));
+*/
 }
+
+
+
+
+
 
 
 double Grid::area(){
@@ -90,7 +127,7 @@ return area;
 }
 
 
-
+/*
 void Grid::printedges(){
 	cout<<"All Edges:"<<endl;
 	for(auto i=AllEdges.begin(); i!=AllEdges.end(); i++)
@@ -128,3 +165,4 @@ void Grid::printedgesIndex(ofstream & ost1, ofstream & ost2, ofstream & ost3){
 	for (auto i : diff) ost3<<i<<endl;
 	
 }
+*/

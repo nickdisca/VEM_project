@@ -76,19 +76,17 @@ int main()
   MyMatrix B=aSquare.ComputeB(2);
   std::cout<<"Matrix B: "<<std::endl<<B<<std::endl;
 
-  /*
-  //check that the default constructor works
-  Grid F;
-  cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
-  cout<<"Area totale: "<<F.area()<<endl<<endl;
 
   //construction of a grid reading from the given file
-  std::ifstream file("mesh.dat");
+  std::ifstream file("squares.dat");
   Grid G(file);
   cout<<"Numero di poligoni nella griglia: "<<G.grid_size()<<endl;
+  cout<<"Numero di elementi di bordo: "<<G.boundary_size()<<endl;
+  cout<<"Numero di vertici totali: "<<G.vertices_size()<<endl;
   cout<<"Area totale: "<<G.area()<<endl<<endl;
   file.close();
 
+  /*
   //check that the copy constructor works
   Grid H(G);
   cout<<"Numero di poligoni nella griglia: "<<H.grid_size()<<endl;
@@ -108,6 +106,7 @@ int main()
   ofstream out3("InternalEdges.dat");
   F.printedgesIndex(out1,out2,out3);
   */
+
 }
   
 
