@@ -10,10 +10,12 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <Eigen/Dense>
 #include <algorithm>
 
 using namespace Geometry;
 using namespace std;
+using namespace Eigen;
 
 class Grid
   {
@@ -27,8 +29,10 @@ class Grid
     unsigned int grid_size(){return abspol.size();};
     unsigned int boundary_size() {return boundary.size();};
     unsigned int vertices_size() {return coord.size();};
-    //void printedges();
-    //void printedgesIndex(ofstream & ost1, ofstream & ost2, ofstream & ost3);
+
+    using ReturnMat = Matrix<double,Dynamic,Dynamic>;
+    //ReturnMat total_D
+    
 
   private:
     std::vector<Point2D> coord;

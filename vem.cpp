@@ -2,6 +2,7 @@
 
 using namespace std;
 using namespace Geometry;
+using MatrixType=Matrix<double,Dynamic,Dynamic>;
 
 Vertices AbstractPolygon::BoundaryDof(int k) const {
 	Vertices vect(vertexes.size()*(k-1),0.0);
@@ -60,16 +61,16 @@ double AbstractPolygon::ComputeIntegral(int k, int d1, int d2) {
 	return value;
 }
 
-MyMatrix AbstractPolygon::ComputeD(int k) {
-	MyMatrix D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
-	cout<<"Created matrix D with size "<<D.GetRows()<<" x "<<D.GetCols()<<endl;
+MatrixType AbstractPolygon::ComputeD(int k) {
+	MatrixType D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
+	cout<<"Created matrix D with size "<<D.rows()<<" x "<<D.cols()<<endl;
 
 	Vertices BD=BoundaryDof(k);
 	vector<array<int,2> > degree=Polynomials(k);
   	
 
-	for (unsigned int j=0; j<D.GetCols(); j++) {
-		for (unsigned int i=0; i<D.GetRows(); i++){
+	for (unsigned int j=0; j<D.cols(); j++) {
+		for (unsigned int i=0; i<D.rows(); i++){
 			array<int,2> actualdegree=degree[j];
 			auto f=[=] (double x,double y)	
 				{return pow((x-Centroid().x())/(Diameter()),actualdegree[0])*pow((y-Centroid().y())/(Diameter()),actualdegree[1]);};
@@ -84,14 +85,14 @@ MyMatrix AbstractPolygon::ComputeD(int k) {
 	return D;
 }
 
-MyMatrix AbstractPolygon::ComputeB(int k){
-	MyMatrix B((k+2)*(k+1)/2,vertexes.size()*k+k*(k-1)/2);
-	cout<<"Created matrix B with size "<<B.GetRows()<<" x "<<B.GetCols()<<endl;
+MatrixType AbstractPolygon::ComputeB(int k){
+	MatrixType B((k+2)*(k+1)/2,vertexes.size()*k+k*(k-1)/2);
+	cout<<"Created matrix B with size "<<B.rows()<<" x "<<B.cols()<<endl;
 	Vertices BD=BoundaryDof(k);
 	vector<array<int,2> > degree=Polynomials(k);
 
-	for (unsigned int j=0; j<B.GetCols()-1; j++) {
-		for (unsigned int i=1; i<B.GetRows(); i++){
+	for (unsigned int j=0; j<B.cols()-1; j++) {
+		for (unsigned int i=1; i<B.rows(); i++){
 			array<int,2> actualdegree=degree[i];
 			auto fx=[=] (double x,double y)	
 {return actualdegree[0]/Diameter()*pow((x-Centroid().x())/(Diameter()),max(actualdegree[0]-1,0))*pow((y-Centroid().y())/(Diameter()),actualdegree[1]);};
@@ -115,12 +116,32 @@ MyMatrix AbstractPolygon::ComputeB(int k){
 		}
 	}
 
-	B(0,B.GetCols()-1)=1.0;
-	for (unsigned int i=1; i<B.GetRows(); i++) {
+	B(0,B.cols()-1)=1.0;
+	for (unsigned int i=1; i<B.rows(); i++) {
 		array<int,2> actualdegree=degree[i];
-		if (actualdegree[0]<=1 || actualdegree[1]<=1) B(i,B.GetCols()-1)=0.0;
-		if (i==3 || i==5) B(i,B.GetCols()-1)=-area()*2/2;
+		if (actualdegree[0]<=1 || actualdegree[1]<=1) B(i,B.cols()-1)=0.0;
+		if (i==3 || i==5) B(i,B.cols()-1)=-area()*2/2;
 	}
 
 return B;
+}
+
+MatrixType AbstractPolygon::ComputeG(int k){
+	return ComputeB(k)*ComputeD(k);
+}
+
+MatrixType AbstractPolygon::ComputeGTilda(int k){
+	MatrixType G=ComputeG(k);
+	for (unsigned int j=0; j<G.cols(); j++) G(0,j)=0.0;
+	return G;
+}
+
+MatrixType AbstractPolygon::ComputeStiffness(int k){
+	MatrixType Pistar=(ComputeG(k).lu()).solve(ComputeB(k)); //cout<<"Pi star"<<Pistar.rows()<<Pistar.cols()<<endl;
+	MatrixType Pi=ComputeD(k)*Pistar; //cout<<"Pi "<<Pi.rows()<<Pi.cols()<<endl;
+	//MatrixXd Eye; Eye.setIdentity(Pi.rows(),Pi.cols());
+	MatrixType Eye(MatrixType::Identity(Pi.rows(),Pi.cols())); //cout<<"Eye "<<Eye.rows()<<Eye.cols()<<endl;
+	//cout<<"Gtilda "<<ComputeGTilda(k).rows()<<ComputeGTilda(k).cols()<<endl;
+	MatrixType ret=Pistar.transpose()*ComputeGTilda(k)*Pistar+(Eye-Pi).transpose()*(Eye-Pi);
+	return ret;
 }

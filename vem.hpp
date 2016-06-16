@@ -12,6 +12,7 @@
 #include <sstream>
 #include <set>
 #include <algorithm>
+#include <Eigen/Dense>
 
 vector<array<int,2> > Polynomials(int k);
 

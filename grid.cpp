@@ -22,7 +22,7 @@ while (1){
 	ss>>cha;
 	if (!ss.eof()) {cout<<"Arrived at number "<<coord.size()<<endl; file.seekg(oldpos); break;}
 	coord.push_back(Point2D{X,Y});
-	cout<<coord.size()<<endl;
+	//cout<<coord.size()<<endl;
 }
 
 //reads connectivity matrix
@@ -41,7 +41,7 @@ while(1){
 	vector<Point2D> p;
 	for (unsigned int j=0; j<line.size(); j++) p.push_back(Point2D(coord[line[j]-1]));
 	abspol.push_back(make_shared<Polygon>(Polygon(p)));
-	Polygon(p).showMe();
+	//Polygon(p).showMe();
 	//cout<<"Arrived at polygon"<<abspol.size()<<endl;
 	//cout<<line[0]<<" "<<line[1]<<" "<<line[2]<<line[3]<<endl;
 }

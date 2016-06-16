@@ -39,7 +39,7 @@ int main()
   std::cout<<"Centroid: "<<aSquare.Centroid().x()<<" "<<aSquare.Centroid().y()<<std::endl;
   std::cout<<"Diameter: "<<aSquare.Diameter()<<std::endl;
 
-  MyMatrix A(5,5);
+  MatrixType A(5,5);
   A(1,1)=3.0; A(2,2)=5.0; A(3,3)=6.0;
   cout<<"My matrix is"<<endl<<A;
 
@@ -70,20 +70,26 @@ int main()
   for (unsigned int i=0; i<BDS2.size(); i++)
   std::cout<<BDS2[i].x()<<" "<<BDS2[i].y()<<std::endl;
 
-  MyMatrix D=aSquare.ComputeD(2);
+  MatrixType D=aSquare.ComputeD(2);
   std::cout<<"Matrix D: "<<std::endl<<D<<std::endl;
 
-  MyMatrix B=aSquare.ComputeB(2);
+  MatrixType B=aSquare.ComputeB(2);
   std::cout<<"Matrix B: "<<std::endl<<B<<std::endl;
+
+  MatrixType G=aSquare.ComputeG(2);
+  std::cout<<"Matrix G: "<<std::endl<<G<<std::endl;
+
+  MatrixType K=aSquare.ComputeStiffness(2);
+  std::cout<<"Stiffness matrix: "<<std::endl<<K<<std::endl;
 
 
   //construction of a grid reading from the given file
   std::ifstream file("squares.dat");
-  Grid G(file);
-  cout<<"Numero di poligoni nella griglia: "<<G.grid_size()<<endl;
-  cout<<"Numero di elementi di bordo: "<<G.boundary_size()<<endl;
-  cout<<"Numero di vertici totali: "<<G.vertices_size()<<endl;
-  cout<<"Area totale: "<<G.area()<<endl<<endl;
+  Grid F(file);
+  cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
+  cout<<"Numero di elementi di bordo: "<<F.boundary_size()<<endl;
+  cout<<"Numero di vertici totali: "<<F.vertices_size()<<endl;
+  cout<<"Area totale: "<<F.area()<<endl<<endl;
   file.close();
 
   /*
