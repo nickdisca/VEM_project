@@ -29,15 +29,18 @@ class Grid
     unsigned int grid_size(){return abspol.size();};
     unsigned int boundary_size() {return boundary.size();};
     unsigned int vertices_size() {return coord.size();};
+    unsigned int edges_size() {return edges.size();};
 
     using ReturnMat = Matrix<double,Dynamic,Dynamic>;
-    //ReturnMat total_D
+	using MatrixType=Matrix<double,Dynamic,Dynamic>;
+    MatrixType K(int k);
     
 
   private:
     std::vector<Point2D> coord;
     std::vector<std::shared_ptr<AbstractPolygon> > abspol;
     std::vector<unsigned int> boundary;
+    std::set<Edge> edges;
   };
 
   #endif

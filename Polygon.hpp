@@ -32,6 +32,8 @@ namespace Geometry
     friend Point2D operator - (Point2D const & a, Point2D const & b);
     //! Addition is implemented as an external friend function
     friend Point2D operator + (Point2D const & a, Point2D const & b);
+
+    friend bool operator == (Point2D const & a, Point2D const & b){return ((a.x()==b.x()) && (a.y()==b.y()));};
   private:
     std::array<double,2> coor;
   };

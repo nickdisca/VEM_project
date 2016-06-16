@@ -89,8 +89,12 @@ int main()
   cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
   cout<<"Numero di elementi di bordo: "<<F.boundary_size()<<endl;
   cout<<"Numero di vertici totali: "<<F.vertices_size()<<endl;
-  cout<<"Area totale: "<<F.area()<<endl<<endl;
+  cout<<"Area totale: "<<F.area()<<endl<<endl<<endl<<endl;
   file.close();
+
+  cout<<"Numero complessivo di lati: "<<F.edges_size()<<endl;
+  auto aaa=F.K(2);
+  //cout<<"Global stiffness matrix: "<<F.K(2)<<endl;
 
   /*
   //check that the copy constructor works
