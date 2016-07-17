@@ -143,5 +143,6 @@ MatrixType AbstractPolygon::ComputeStiffness(int k){
 	MatrixType Eye(MatrixType::Identity(Pi.rows(),Pi.cols())); //cout<<"Eye "<<Eye.rows()<<Eye.cols()<<endl;
 	//cout<<"Gtilda "<<ComputeGTilda(k).rows()<<ComputeGTilda(k).cols()<<endl;
 	MatrixType ret=Pistar.transpose()*ComputeGTilda(k)*Pistar+(Eye-Pi).transpose()*(Eye-Pi);
+	cout<<"Local stiffness dimensions"<<ret.rows()<<" "<<ret.cols()<<endl;
 	return ret;
 }

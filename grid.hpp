@@ -30,6 +30,7 @@ class Grid
     unsigned int boundary_size() {return boundary.size();};
     unsigned int vertices_size() {return coord.size();};
     unsigned int edges_size() {return edges.size();};
+    void ConnMatrixBound(int k);
 
     using ReturnMat = Matrix<double,Dynamic,Dynamic>;
 	using MatrixType=Matrix<double,Dynamic,Dynamic>;
@@ -41,6 +42,8 @@ class Grid
     std::vector<std::shared_ptr<AbstractPolygon> > abspol;
     std::vector<unsigned int> boundary;
     std::set<Edge> edges;
+    std::set<Point2D> connBound;
+    int k;
   };
 
   #endif

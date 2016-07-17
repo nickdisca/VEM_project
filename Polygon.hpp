@@ -34,6 +34,11 @@ namespace Geometry
     friend Point2D operator + (Point2D const & a, Point2D const & b);
 
     friend bool operator == (Point2D const & a, Point2D const & b){return ((a.x()==b.x()) && (a.y()==b.y()));};
+    friend bool operator <(Point2D const &f, Point2D const &s)
+    {
+      if (f.x()==s.x()) return f.y()<s.y();
+      return f.x()<s.x();
+    };
   private:
     std::array<double,2> coor;
   };

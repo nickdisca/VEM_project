@@ -84,7 +84,7 @@ int main()
 
 
   //construction of a grid reading from the given file
-  std::ifstream file("squares.dat");
+  std::ifstream file("squares2.dat");
   Grid F(file);
   cout<<"Numero di poligoni nella griglia: "<<F.grid_size()<<endl;
   cout<<"Numero di elementi di bordo: "<<F.boundary_size()<<endl;
@@ -94,7 +94,7 @@ int main()
 
   cout<<"Numero complessivo di lati: "<<F.edges_size()<<endl;
   auto aaa=F.K(2);
-  //cout<<"Global stiffness matrix: "<<F.K(2)<<endl;
+  cout<<"Global stiffness matrix: "<<F.K(2)<<endl;
 
   /*
   //check that the copy constructor works
