@@ -82,6 +82,15 @@ int main()
   MatrixType K=aSquare.ComputeStiffness(2);
   std::cout<<"Stiffness matrix: "<<std::endl<<K<<std::endl;
 
+  MatrixType H=aSquare.ComputeH(2);
+  std::cout<<"H matrix: "<<std::endl<<H<<std::endl;
+
+  MatrixType C=aSquare.ComputeC(2);
+  std::cout<<"C matrix: "<<std::endl<<C<<std::endl;
+
+  //MatrixType F=aSquare.LoadTerm(2);
+  //std::cout<<"LoadTerm: "<<std::endl<<F<<std::endl;
+
 
   //construction of a grid reading from the given file
   std::ifstream file("squares2.dat");
@@ -93,8 +102,13 @@ int main()
   file.close();
 
   cout<<"Numero complessivo di lati: "<<F.edges_size()<<endl;
-  auto aaa=F.K(2);
   cout<<"Global stiffness matrix: "<<F.K(2)<<endl;
+  cout<<"Global load term: "<<F.F(2)<<endl<<endl<<endl;
+
+  MatrixType u=(F.K(2).lu()).solve(F.F(2));
+  cout<<"Solution: "<<u<<endl<<endl<<endl;
+
+
 
   /*
   //check that the copy constructor works

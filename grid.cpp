@@ -88,6 +88,61 @@ void Grid::ConnMatrixBound(int k){
 	}
 }
 
+
+
+MatrixType Grid::F(int k){
+	unsigned int dim=abspol.size()*(k-1)*(k)/2+coord.size()+(k-1)*edges.size();
+	MatrixType F(dim,1);
+	ConnMatrixBound(k);
+
+	for (unsigned int cont=0; cont<abspol.size(); cont++){
+		//MatrixType locF=(abspol[cont])->LoadTerm(k);
+		MatrixType locF(9,9);
+		cout<<" Arrived here"<<endl;
+
+		//assemble line of connettivity matrix (parte già da 0!!!)
+		vector<unsigned int> line(((*(abspol[cont])).theVertices()).size());
+		//cout<<"Line size"<<line.size()<<endl;
+		
+			for (unsigned int i=0; i<line.size(); i++){
+				Point2D PP(((abspol[cont])->theVertices())[i]);
+				auto it=find(coord.begin(),coord.end(),PP);
+				line[i]=distance(coord.begin(),it);
+			}
+
+		cout<<"Current line: "<<line[0]<<" "<<line[1]<<" "<<line[2]<<" "<<line[3]<<endl;
+
+		//assemble line of connectivity matrix for boundary dof (check)
+		vector<unsigned int> line2;
+		Vertices v=abspol[cont]->BoundaryDof(k);
+		for (unsigned int j=0; j<v.size(); j++) {
+			auto it=find(connBound.begin(),connBound.end(),v[j]);
+			line2.push_back(distance(connBound.begin(),it));
+		}
+		cout<<"Current line: "<<line2[0]<<" "<<line2[1]<<" "<<line2[2]<<" "<<line2[3]<<endl;
+
+		//internal dofs (to be checked)
+		vector<unsigned int> line3;
+		for (unsigned int i=0; i<k*(k-1)/2; i++) line3.push_back(cont+i);
+
+		vector<unsigned int> V=line;
+		for (auto i : line2) V.push_back(i+coord.size());
+		for (auto i : line3) V.push_back(i+coord.size()+(k-1)*edges.size());
+		for (auto i : V) cout<<i<<" ";
+			cout<<endl;
+		
+		for (unsigned int i=0; i<locF.rows(); i++){
+				F(V[i],0)+=locF(i,0);
+		}
+
+	}
+	return F;
+}
+
+
+
+
+
 MatrixType Grid::K(int k){
 	//dimensione: interni+num vertici+ boundary
 	unsigned int dim=abspol.size()*(k-1)*(k)/2+coord.size()+(k-1)*edges.size();

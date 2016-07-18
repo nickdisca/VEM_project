@@ -35,6 +35,7 @@ class Grid
     using ReturnMat = Matrix<double,Dynamic,Dynamic>;
 	using MatrixType=Matrix<double,Dynamic,Dynamic>;
     MatrixType K(int k);
+    MatrixType F(int k);
     
 
   private:

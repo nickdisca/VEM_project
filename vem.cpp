@@ -58,6 +58,7 @@ double AbstractPolygon::ComputeIntegral(int k, int d1, int d2) {
 	if (d1==2 && d2==0) return 1.0/24;
 	if (d1==0 && d2==2) return 1.0/24;
 	if (d1==1 && d2==1) return 0.0;
+	cout<<"Unknown value"<<endl;
 	return value;
 }
 
@@ -83,6 +84,41 @@ MatrixType AbstractPolygon::ComputeD(int k) {
 
 
 	return D;
+}
+
+MatrixType AbstractPolygon::ComputeH(int k){
+MatrixType H((k+2)*(k+1)/2,(k+2)*(k+1)/2);
+//devo calcolare gli integrali dei prodotti dei monomi di base
+for (unsigned int i=0; i<H.rows(); i++){
+	for (unsigned int j=0; j<H.cols(); j++){
+		H(i,j)=ComputeIntegral(k,i,j);
+	}
+}
+return H;
+}
+
+MatrixType AbstractPolygon::LoadTerm(int k){
+	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant
+	MatrixType Pi0star=((ComputeH(k).lu()).solve(ComputeC(k)));
+	for (unsigned int i=0; i<F.rows(); i++){
+		for (unsigned int alpha=0; alpha<(k+2)*(k+1)/2; alpha++){
+			F(i,0)+=Pi0star(alpha,i)*ComputeIntegral(k,alpha,1);
+		}
+	}
+	return F;
+}
+
+MatrixType AbstractPolygon::ComputeC(int k){
+MatrixType C((k+1)*(k+2)/2,vertexes.size()*k+k*(k-1)/2);
+for (unsigned int alpha=0; alpha<C.rows(); alpha++){
+	for (unsigned int i=0; i<C.cols(); i++){
+		if (alpha<k*(k-1)/2 && i==k*vertexes.size()+alpha) C(alpha,i)=area();
+		if (alpha<k*(k-1)/2 && i!=k*vertexes.size()+alpha) C(alpha,i)=0.0;
+		if (alpha>= k*(k-1)/2) {MatrixType M= ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
+							C(alpha,i)=M(alpha,i);}
+	}
+}
+return C;
 }
 
 MatrixType AbstractPolygon::ComputeB(int k){

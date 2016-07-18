@@ -119,8 +119,11 @@ namespace Geometry
     MatrixType ComputeD(int k);
     MatrixType ComputeB(int k);
     MatrixType ComputeG(int k);
+    MatrixType ComputeH(int k);
+    MatrixType ComputeC(int k);
     MatrixType ComputeGTilda(int k);
     MatrixType ComputeStiffness(int k);
+    MatrixType LoadTerm(int k);
     double ComputeIntegral(int k, int d1, int d2);
     double IntegralWithDof(int k, int edge, int phi);
     Point2D Normal(int edge);
