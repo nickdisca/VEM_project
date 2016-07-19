@@ -88,10 +88,13 @@ int main()
   MatrixType C=aSquare.ComputeC(2);
   std::cout<<"C matrix: "<<std::endl<<C<<std::endl;
 
-  //MatrixType F=aSquare.LoadTerm(2);
-  //std::cout<<"LoadTerm: "<<std::endl<<F<<std::endl;
+  MatrixType FF=aSquare.LoadTerm(2);
+  std::cout<<"LoadTerm: "<<std::endl<<FF<<std::endl;
 
+  MatrixType u=(K.lu()).solve(FF);
+  cout<<"Solution: "<<u<<endl<<endl<<endl;
 
+/*
   //construction of a grid reading from the given file
   std::ifstream file("squares2.dat");
   Grid F(file);
@@ -107,7 +110,7 @@ int main()
 
   MatrixType u=(F.K(2).lu()).solve(F.F(2));
   cout<<"Solution: "<<u<<endl<<endl<<endl;
-
+*/
 
 
   /*

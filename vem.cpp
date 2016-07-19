@@ -54,10 +54,20 @@ Point2D AbstractPolygon::Normal(int edge){
 double AbstractPolygon::ComputeIntegral(int k, int d1, int d2) {
 	double value{0.0};
 	if (d1==0 && d2==0) return 1.0;
-	if ((d1+d2)%2==1) return 0.0;
+	if (d1==1 && d2==0) return 0.0;
+	if (d1==0 && d2==1) return 0.0;
 	if (d1==2 && d2==0) return 1.0/24;
 	if (d1==0 && d2==2) return 1.0/24;
 	if (d1==1 && d2==1) return 0.0;
+	if (d1==3 && d2==0) return 0.0;
+	if (d1==2 && d2==1) return 0.0;
+	if (d1==1 && d2==2) return 0.0;
+	if (d1==0 && d2==3) return 0.0;
+	if (d1==4 && d2==0) return 1.0/320;
+	if (d1==3 && d2==1) return 0.0;
+	if (d1==2 && d2==2) return 1.0/576;
+	if (d1==1 && d2==3) return 0.0;
+	if (d1==0 && d2==4) return 1.0/320;
 	cout<<"Unknown value"<<endl;
 	return value;
 }
@@ -88,21 +98,25 @@ MatrixType AbstractPolygon::ComputeD(int k) {
 
 MatrixType AbstractPolygon::ComputeH(int k){
 MatrixType H((k+2)*(k+1)/2,(k+2)*(k+1)/2);
+vector<array<int,2> > degree=Polynomials(k);
 //devo calcolare gli integrali dei prodotti dei monomi di base
 for (unsigned int i=0; i<H.rows(); i++){
 	for (unsigned int j=0; j<H.cols(); j++){
-		H(i,j)=ComputeIntegral(k,i,j);
+		H(i,j)=ComputeIntegral(k,degree[i][0]+degree[j][0],degree[i][1]+degree[j][1]);
 	}
 }
 return H;
 }
 
 MatrixType AbstractPolygon::LoadTerm(int k){
-	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant
+	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant=1
+	vector<array<int,2> > degree=Polynomials(k);
 	MatrixType Pi0star=((ComputeH(k).lu()).solve(ComputeC(k)));
+	cout<<Pi0star<<endl;
 	for (unsigned int i=0; i<F.rows(); i++){
 		for (unsigned int alpha=0; alpha<(k+2)*(k+1)/2; alpha++){
-			F(i,0)+=Pi0star(alpha,i)*ComputeIntegral(k,alpha,1);
+			F(i,0)+=Pi0star(alpha,i)*ComputeIntegral(k,degree[alpha][0],degree[alpha][1]);
+			//cout<<F(i,0)<<"  "<<i<<endl;
 		}
 	}
 	return F;
