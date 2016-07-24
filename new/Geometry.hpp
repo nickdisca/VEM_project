@@ -1,6 +1,7 @@
 #ifndef __GEOMETRY_HPP_
 #define __GEOMETRY_HPP_
 #include <array>
+#include <vector>
 #include <iostream>
 
 //class representing a point in 2D
@@ -38,7 +39,7 @@ public:
 	//output
 	friend std::ostream & operator << (std::ostream &, const Point &);
 
-protected:
+private:
 	std::array<double,2> M_coor;
 };
 
@@ -56,5 +57,43 @@ inline  Point operator *(const double & d, const Point & p)
 //END OF CLASS POINT
 
 
+
+
+class Polygon {
+public:
+	//standard methods
+	Polygon():vertexes(),pointer(nullptr){};
+	Polygon(const Polygon &)=default; 
+	Polygon & operator=(const Polygon&)=default; 
+	Polygon(Polygon &&)=default;
+	Polygon & operator=(Polygon&&)=default;
+	//~Polygon(){};
+
+	//constructor giving the two vectors
+	Polygon(std::vector<unsigned int> const v, std::vector<Point> * p):vertexes(v),pointer(p){};
+
+	//return the indexes
+	std::vector<unsigned int> getVertexes(){return vertexes;};
+	//get the points
+	std::vector<Point> getPoints() const;
+	//size of the polygon
+	unsigned int const size() const {return vertexes.size();};
+
+	//operator []
+	unsigned int const operator[] (int i) const {return vertexes[i];}
+	unsigned int & operator[] (int i) {return vertexes[i];}
+
+	//diameter, area, centroid
+	double area() const;
+	Point centroid() const;
+	double diameter() const;
+
+	//output
+	friend std::ostream & operator << (std::ostream &, const Polygon &);
+
+private:
+	std::vector<unsigned int> vertexes;
+	std::vector<Point> * pointer;
+};
 
 #endif
