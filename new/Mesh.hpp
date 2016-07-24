@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 #include <iosfwd>
-
+/*
 class Mesh; //pura dichiarazione, la definisco dopo
 
 //serve puramente ad accedere agli elementi privati della classe
@@ -85,4 +85,7 @@ private:
   //std::ostream & operator<<(std::ostream &, Mesh const&);
 
 
+
+
+*/
 #endif 

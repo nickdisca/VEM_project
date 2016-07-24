@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
-  
+
 /*
 MeshHandler::MeshHandler(Mesh &mesh):
 pointList(mesh.M_pointList),
@@ -15,6 +15,8 @@ m(mesh)
 {};
 */
 
+
+/*
 int MeshRead::read(Mesh & m, std::string const & filename){
 	using namespace std;
 	MeshHandler mesh(m);
@@ -87,6 +89,21 @@ int MeshRead::read(Mesh & m, std::string const & filename){
 
 
 };
+
+
+  
+Mesh::Mesh(std::string const filename, MeshReader & reader)
+{reader.read(*this,filename);}
+
+  
+
+int Mesh::readMesh(const std::string & file, MeshReader & reader)
+{return reader.read(*this,file);}
+
+*/
+
+
+
 
 
 
@@ -166,26 +183,6 @@ int MeshRead::read(Mesh & m, std::string const & filename){
 
 
 
-
-
-
-
-
-
-
-
-
-
-  
-  
-Mesh::Mesh(std::string const filename, MeshReader & reader)
-{reader.read(*this,filename);}
-
-  
-
-int Mesh::readMesh(const std::string & file, MeshReader & reader)
-{return reader.read(*this,file);}
-
 /*
   double Mesh::measure()const 
   {
@@ -194,8 +191,7 @@ int Mesh::readMesh(const std::string & file, MeshReader & reader)
 	 i!=M_elementList.cend();++i)mes+=i->measure();
     return mes;
   }
-*/
-  /*
+
   bool Mesh::checkmesh() const{
     using std::clog;
     using std::endl;
@@ -243,8 +239,7 @@ int Mesh::readMesh(const std::string & file, MeshReader & reader)
     if(!status)clog<<"Domain area:"<<this->measure()<<endl;
     return status;
   }
-*/
-/* 
+
   std::ostream & operator<<(std::ostream & out, Mesh const& m)
   {
     out<< " ***** MESH  INFORMATION ******"<<std::endl;
@@ -272,3 +267,7 @@ int Mesh::readMesh(const std::string & file, MeshReader & reader)
     return out;
   }
 */
+
+
+
+
