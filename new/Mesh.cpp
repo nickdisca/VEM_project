@@ -5,23 +5,24 @@
 #include <memory>
 #include <algorithm>
 
-/*
+
 MeshHandler::MeshHandler(Mesh &mesh):
 pointList(mesh.M_pointList),
 elementList(mesh.M_elementList),
-edgeList(mesh.M_edgeList),
-bEdgeList(mesh.M_bEdgeList),
+boundary(mesh.M_boundary),
+//edgeList(mesh.M_edgeList),
+//bEdgeList(mesh.M_bEdgeList),
 m(mesh)
 {};
-*/
 
 
-/*
-int MeshRead::read(Mesh & m, std::string const & filename){
+
+
+int MeshReader::read(Mesh & m, std::string const & filename){
 	using namespace std;
 	MeshHandler mesh(m);
 	vector<Point> & pl(mesh.pointList);
-	vector<Triangle> & el(mesh.elementList);
+	vector<Polygon> & el(mesh.elementList);
 	ifstream f;
 	string currLine;
 	f.open(filename.c_str());
@@ -34,37 +35,38 @@ int MeshRead::read(Mesh & m, std::string const & filename){
 
 	//reads coordinates of the vertexes
 	while (1){
-		streampos oldpos=file.tellg();
-		getline(file,currLine);
+		streampos oldpos=f.tellg();
+		getline(f,currLine);
 		stringstream ss(currLine);
 		double X,Y; ss>>X>>Y;
 		char cha; ss>>cha;
 		//ora se tutto va bene sono alla fine della stringa. Se non lo sono ho finito
-		if (!ss.eof()) {cout<<"Arrived at number "<<M_pointList.size()<<endl; file.seekg(oldpos); break;}
+		if (!ss.eof()) {cout<<"Total number of points = "<<pl.size()<<endl; f.seekg(oldpos); break;}
 
 		//aggiungi il punto trovato
-		M_pointList.push_back(Point2D{X,Y});
+		pl.push_back(Point{X,Y});
 
 		if(this->M_verbose) 
-			cout<<"Added the point number "<<M_pointList.size()<<" which is X= "<<X<<" Y= "<<Y<<endl;
+			cout<<"Added the point number "<<pl.size()-1<<" which is X= "<<X<<" Y= "<<Y<<endl;
 	}
 
 	//reads connectivity matrix
 	while(1){
-		streampos oldpos=file.tellg();
-		getline(file,currLine);
+		streampos oldpos=f.tellg();
+		getline(f,currLine);
 		stringstream ss(currLine);
 
 		//salva la i-esima riga della matrice
+		//nota: la matrice di connettività parte da 1, a me serve che parta da 0!!!
 		std::vector<unsigned int> line;
 		unsigned int d;
-		while (!ss.eof()) {ss>>d; line.push_back(d);}
+		while (!ss.eof()) {ss>>d; line.push_back(d-1);}
 		line.pop_back(); //se non lo metto, l'ultimo elemento viene contato due volte
 
 		//se tutto va bene, la lunghezza deve essere almeno 2. Se non lo è ho finito
-		if (line.size()<=1) {cout<<"Arrived at number "<<M_elementList.size()<<endl; file.seekg(oldpos); break;}
+		if (line.size()<=1) {cout<<"Total number of polygons = "<<el.size()<<endl; f.seekg(oldpos); break;}
 
-
+		/*
 		for (unsigned int i=1; i<line.size(); ++i){
 			M_edgeList.insert(Edge{line[i],line[i-1]});
 			if(this->M_verbose) 
@@ -73,20 +75,22 @@ int MeshRead::read(Mesh & m, std::string const & filename){
 		M_edgeList.insert(Edge{line[0],line[line.size()]});
 		if(this->M_verbose) 
 			cout<<"Added the edge "<<M_edgeList.size()<<" which is a= "<<line[0]<<" b= "<<line[line.size()]<<endl;
-
-		M_elementList.push_back(Polygon(line));
+		*/
+		el.push_back(Polygon(line,&pl));
 		if(this->M_verbose) 
-			cout<<"Added the polygon "<<M_elementList.size()<<" which is "<<Polygon(line).showMe()<<endl;
+			cout<<"Added the polygon "<<el.size()-1<<" which is "<<Polygon(line,&pl)<<endl;
 	}
 
 	//reads boundary elements (dovrei salvare gli edges, ma qui ho solo le coordinate dei vertici)
-	//boundary dovrebbe essere un vettore di unsigned int
-	while (getline(file,currLine)){
-		boundary.push_back(stoi(currLine));
+	//anche qui shift di 1
+	while (getline(f,currLine)){
+		mesh.boundary.push_back(stoi(currLine)-1);
 		if(this->M_verbose) 
-			cout<<"New boundary vertex "<<boundary.size()<<" which is "<<stoi(currLine)<<endl;
+			cout<<"Added boundary vertex with index "<<mesh.boundary.size()-1<<" which is "<<stoi(currLine)-1<<endl;
 	}
+	cout<<"Total number of boundary vertexes = "<<mesh.boundary.size()<<endl;
 
+	return 0;
 
 };
 
@@ -100,7 +104,18 @@ Mesh::Mesh(std::string const filename, MeshReader & reader)
 int Mesh::readMesh(const std::string & file, MeshReader & reader)
 {return reader.read(*this,file);}
 
-*/
+
+std::ostream & operator << (std::ostream & ost, const Mesh & m){
+	ost<<"##MESH##"<<std::endl;
+	ost<<"#POINTS#"<<std::endl;
+	for (auto i : m.M_pointList) ost<<i;
+	ost<<"#POLYGONS#"<<std::endl;
+	for (auto i : m.M_elementList) ost<<i;
+	ost<<"#BOUNDARY VERTEXES#"<<std::endl;
+	for (unsigned int i=0; i<m.M_boundary.size(); ++i) 
+		ost<<m.M_boundary[i]<<" corresponding to point "<<m.M_pointList[m.M_boundary[i]];
+return ost;
+}
 
 
 

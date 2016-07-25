@@ -4,17 +4,21 @@
 #include <string>
 #include <memory>
 #include <iosfwd>
-/*
+#include <iostream>
+#include <sstream>
+#include "Geometry.hpp"
+
 class Mesh; //pura dichiarazione, la definisco dopo
 
 //serve puramente ad accedere agli elementi privati della classe
 struct MeshHandler{
 	MeshHandler(Mesh &mesh);
-	//std::vector<Point> & pointList;
-	//std::vector<Triangle> & elementList;
+	std::vector<Point> & pointList;
+	std::vector<Polygon> & elementList;
+	std::vector<unsigned int> & boundary;
 	//std::vector<Edge> & edgeList;
 	//std::vector<Edge> & bEdgeList;
-	//Mesh & m;
+	Mesh & m;
 };
 
 
@@ -48,15 +52,15 @@ public:
 
 	friend struct MeshHandler;
 	//! Number of points
-	//size_type num_points()const {return M_pointList.size();}
+	size_type num_points()const {return M_pointList.size();}
 	//! ith point
-	//Point const & point(size_type i)const {return M_pointList[i];}
+	Point const & point(size_type i)const {return M_pointList[i];}
 	//! Number of elements
-	//size_type num_elements()const {return M_elementList.size();}
+	size_type num_elements()const {return M_elementList.size();}
 	//! ith element
-	//Triangle const & element(size_type i)const {return M_elementList[i];}
+	Polygon const & element(size_type i)const {return M_elementList[i];}
 	//! Ith element with specific name
-	//Triangle const & triangle(size_type i)const {return M_elementList[i];}
+	//Polygon const & triangle(size_type i)const {return M_elementList[i];}
 	//! Number of edges
 	//size_type num_edges()const {return M_edgeList.size();}
 	//! ith Edge
@@ -70,14 +74,17 @@ public:
 	//! Are boundary edges stored
 	//bool has_bEdges()const{return ! M_bEdgeList.empty();}
 	//! Read a mesh from file using a reader
-	//int readMesh(std::string const & file, MeshReader &);
+	int readMesh(std::string const & file, MeshReader &);
 	//! measure of the domain
-	//double measure()const;
+	double measure()const;
 	//! Test mesh consistency
 	//bool checkmesh()const;
+	//! output
+	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:
-	//std::vector<Point> M_pointList;
-	//std::vector<Triangle> M_elementList;
+	std::vector<Point> M_pointList;
+	std::vector<Polygon> M_elementList;
+	std::vector<unsigned int> M_boundary;
 	//std::vector<Edge> M_edgeList;
 	//std::vector<Edge> M_bEdgeList;
 };
@@ -87,5 +94,5 @@ private:
 
 
 
-*/
+
 #endif 

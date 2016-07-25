@@ -18,12 +18,17 @@ std::vector<Point> v;
 v.push_back(Point(1.0,1.0)); v.push_back(Point{2.0,1.0}); v.push_back(Point(2.0,2.0)); v.push_back(Point(1.0,2.0));
 //v.push_back(Point(0.0,0.0)); v.push_back(Point{1.0,0.0}); v.push_back(Point(1.0,1.0)); v.push_back(Point(0.0,1.0));
 
-std::vector<unsigned int> uns; uns.push_back(0); uns.push_back(1); uns.push_back(2); uns.push_back(3);
+std::vector<unsigned int> uns; uns.push_back(1); uns.push_back(2); uns.push_back(3); uns.push_back(4);
 Polygon p(uns,&v);
 cout<<p;
 cout<<"Area = "<<p.area()<<endl;
 cout<<"Centroid is "<<p.centroid();
-cout<<"Diameter = "<<p.diameter()<<endl;
+cout<<"Diameter = "<<p.diameter()<<endl<<endl;
+
+std::string str="squares.dat";
+MeshReader read(false);
+Mesh m(str,read);
+cout<<m;
 
 
 return 0;
