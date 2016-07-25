@@ -117,7 +117,11 @@ std::ostream & operator << (std::ostream & ost, const Mesh & m){
 return ost;
 }
 
-
+double Mesh::area()const {
+	double meas(0);
+	for (auto i : M_elementList) meas+=i.area();
+	return meas;
+}
 
 
 
@@ -199,13 +203,7 @@ return ost;
 
 
 /*
-  double Mesh::measure()const 
-  {
-    double mes(0);
-    for (auto i=M_elementList.cbegin();
-	 i!=M_elementList.cend();++i)mes+=i->measure();
-    return mes;
-  }
+
 
   bool Mesh::checkmesh() const{
     using std::clog;

@@ -76,7 +76,7 @@ public:
 	//! Read a mesh from file using a reader
 	int readMesh(std::string const & file, MeshReader &);
 	//! measure of the domain
-	double measure()const;
+	double area()const;
 	//! Test mesh consistency
 	//bool checkmesh()const;
 	//! output

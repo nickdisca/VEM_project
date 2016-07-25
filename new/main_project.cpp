@@ -29,6 +29,7 @@ std::string str="squares.dat";
 MeshReader read(false);
 Mesh m(str,read);
 cout<<m;
+cout<<"Total area = "<<m.area()<<endl;
 
 
 return 0;
