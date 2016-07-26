@@ -7,7 +7,7 @@ using namespace std;
 
 int main()
 {
-
+/*
 double a=5.0,b=6.0;
 Point c(a,b);
 Point c2; c2.setCoordinates(b,a);
@@ -18,18 +18,20 @@ std::vector<Point> v;
 v.push_back(Point(1.0,1.0)); v.push_back(Point{2.0,1.0}); v.push_back(Point(2.0,2.0)); v.push_back(Point(1.0,2.0));
 //v.push_back(Point(0.0,0.0)); v.push_back(Point{1.0,0.0}); v.push_back(Point(1.0,1.0)); v.push_back(Point(0.0,1.0));
 
-std::vector<unsigned int> uns; uns.push_back(1); uns.push_back(2); uns.push_back(3); uns.push_back(4);
+std::vector<unsigned int> uns; uns.push_back(0); uns.push_back(1); uns.push_back(2); uns.push_back(3);
 Polygon p(uns,&v);
-cout<<p;
 cout<<"Area = "<<p.area()<<endl;
 cout<<"Centroid is "<<p.centroid();
 cout<<"Diameter = "<<p.diameter()<<endl<<endl;
+*/
 
-std::string str="squares.dat";
+std::string str="squares2.dat";
 MeshReader read(false);
-Mesh m(str,read);
-cout<<m;
+Mesh m(str,read,2);
+//cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
+m.boundaryDOF();
+cout<<m;
 
 
 return 0;

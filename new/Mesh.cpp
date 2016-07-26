@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <set>
 
 
 MeshHandler::MeshHandler(Mesh &mesh):
@@ -96,13 +97,13 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 
 
   
-Mesh::Mesh(std::string const filename, MeshReader & reader)
-{reader.read(*this,filename);}
+Mesh::Mesh(std::string const filename, MeshReader & reader, unsigned int kk)
+{k=kk; reader.read(*this,filename);}
 
   
 
-int Mesh::readMesh(const std::string & file, MeshReader & reader)
-{return reader.read(*this,file);}
+int Mesh::readMesh(const std::string & file, MeshReader & reader, unsigned int kk)
+{k=kk; return reader.read(*this,file);}
 
 
 std::ostream & operator << (std::ostream & ost, const Mesh & m){
@@ -124,8 +125,57 @@ double Mesh::area()const {
 }
 
 
+//free function, returns weights and points of GLL
+void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<double> & weights,std::vector<Point> & nodes){
+	std::vector<double> W,N;
+	nodes.clear(); weights.clear(); 
+	if (k==1) ;
+	if (k==2) N.push_back(0.0); W.push_back(4.0/3.0);
+	if (k>=3) std::cout<<"Error";
+
+	//ciclo su tutti i lati
+	for (unsigned int i=0; i<points.size(); ++i){
+		Point a=points[i], b=points[(i+1)%points.size()];
+		//mappo i nodi e pesi per ogni lato
+		for (unsigned int j=0; j<N.size(); ++j) {
+			nodes.push_back(Point{(b[0]-a[0])/2.0*N[j]+(b[0]+a[0])/2.0,(b[1]-a[1])/2.0*N[j]+(b[1]+a[1])/2.0});
+			weights.push_back(std::max((b[0]-a[0])/2.0,(b[1]-a[1])/2.0)*W[j]);
+		}
+	}
+	//devo anche aggiungere a inizio e fine i pesi associati ai vertici!!
+	//for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
+	return;
+}
 
 
+void Mesh::boundaryDOF(){
+	//std::set<Point> M_set;
+	//M_edgesDOF.clear();
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		auto points=M_elementList[i].getPoints();
+		std::vector<Point> nodes;
+		std::vector<double> weights;
+		computeDOF(points,k,weights,nodes);
+		std::vector<unsigned int> line;
+		for (unsigned int j=0; j<nodes.size(); j++) {
+
+			//insert if is not in the vector
+			auto index=std::find(M_edgesDOF.begin(),M_edgesDOF.end(),nodes[j]);
+			if (index==M_edgesDOF.end())
+				{M_edgesDOF.push_back(nodes[j]); line.push_back(M_edgesDOF.size()-1); 
+					//std::cout<<std::distance(M_edgesDOF.begin(),index+1)<<"hh"<<std::endl;
+				}
+			else {line.push_back(std::distance(M_edgesDOF.begin(),index));
+					//std::cout<<std::distance(M_edgesDOF.begin(),index)<<"hh"<<std::endl;
+				}
+			//auto status=M_set.insert(nodes[j]);
+			//for (auto kk : M_edgesDOF) std::cout<<kk<<std::endl;
+			//std::cout<<"Inserted element number "<<line[line.size()-1]<<"corresponding to point "<<nodes[j];
+			M_elementList[i].setDof(line,&M_edgesDOF);
+		}
+	}
+	return;
+}
 
 
 /*

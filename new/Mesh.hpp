@@ -5,6 +5,7 @@
 #include <memory>
 #include <iosfwd>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include "Geometry.hpp"
 
@@ -43,7 +44,7 @@ public:
 
 	//standard methods + metodo che legge la mesh da file usando un reader
 	Mesh()=default;
-	Mesh(std::string const filename, MeshReader &);
+	Mesh(std::string const filename, MeshReader &, unsigned int kk);
 	Mesh(const Mesh &)=default;
 	Mesh(Mesh &&)=default;
 	Mesh & operator =(Mesh const &)=default;
@@ -74,9 +75,11 @@ public:
 	//! Are boundary edges stored
 	//bool has_bEdges()const{return ! M_bEdgeList.empty();}
 	//! Read a mesh from file using a reader
-	int readMesh(std::string const & file, MeshReader &);
+	int readMesh(std::string const & file, MeshReader &, unsigned int kk);
 	//! measure of the domain
 	double area()const;
+	//! Compute the connectivity matrix for the dof on edges
+	void boundaryDOF();
 	//! Test mesh consistency
 	//bool checkmesh()const;
 	//! output
@@ -85,6 +88,8 @@ private:
 	std::vector<Point> M_pointList;
 	std::vector<Polygon> M_elementList;
 	std::vector<unsigned int> M_boundary;
+	std::vector<Point> M_edgesDOF;
+	unsigned int k;
 	//std::vector<Edge> M_edgeList;
 	//std::vector<Edge> M_bEdgeList;
 };

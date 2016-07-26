@@ -30,6 +30,11 @@ std::ostream & operator << (std::ostream & ost, const Polygon & p){
 	ost<<"The polygon is the following: "<<std::endl;
 	for (unsigned int i=0; i<p.size(); ++i) 
 		ost<<"Index "<<" = "<<p.vertexes[i]<<" corresponding to point "<<p.pointer->operator[](p.vertexes[i]);
+	ost<<"with the following dofs: "<<std::endl;
+	if (p.dof.size()==0) std::cout<<"Boundary dofs not set"<<std::endl;
+	else
+	for (unsigned int i=0; i<p.size(); ++i) 
+		ost<<"Index "<<" = "<<p.dof[i]<<" corresponding to point "<<p.pointer_dof->operator[](p.dof[i]);
 return ost;
 };
 
@@ -71,3 +76,8 @@ double Polygon::diameter() const{
 	}
 	return d;
 };
+
+void Polygon::setDof(std::vector<unsigned int> const & v, std::vector<Point> * p){
+	dof=v; pointer_dof=p;
+	return;
+}

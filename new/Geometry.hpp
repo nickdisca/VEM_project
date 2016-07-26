@@ -33,6 +33,13 @@ public:
 	Point operator *(const double &)const;
 	friend Point operator*(const double &, const Point &);
 
+	//confronto
+	friend bool operator == (Point const & a, Point const & b){return ((a[0]==b[0]) && (a[1]==b[1]));};
+	friend bool operator <(Point const &f, Point const &s){
+		if (f[0]==s[0]) return f[1]<s[1];
+		return f[0]<s[0];
+	};
+
 	//distance between two points
 	friend double distance(const Point &, const Point &);
 
@@ -88,12 +95,17 @@ public:
 	Point centroid() const;
 	double diameter() const;
 
+	//set dof
+	void setDof(std::vector<unsigned int> const &, std::vector<Point> *);
+
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);
 
 private:
 	std::vector<unsigned int> vertexes;
 	std::vector<Point> * pointer;
+	std::vector<unsigned int> dof;
+	std::vector<Point> * pointer_dof;
 };
 
 #endif
