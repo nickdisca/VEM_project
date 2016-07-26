@@ -81,3 +81,61 @@ void Polygon::setDof(std::vector<unsigned int> const & v, std::vector<Point> * p
 	dof=v; pointer_dof=p;
 	return;
 }
+
+std::vector<Point> Polygon::getDof() const{
+	std::vector<Point> tmp(dof.size());
+	for (unsigned int i=0; i<tmp.size(); ++i) 
+		tmp[i]=pointer_dof->operator[](dof[i]);
+	return tmp;
+};
+
+//calcola i gradi dei polinomi nell'ordine 00,10,01,20...
+std::vector<std::array<int,2> > Polynomials(int k) {
+	std::vector<std::array<int,2> > degree;
+	for (int i=0; i<=k; i++) {
+		for (int j=i; j>=0; j--){
+			degree.push_back(std::array<int,2>{{j,i-j}});
+			//std::cout<<"{ "<<j<<" , "<<i-j<<" }"<<std::endl;
+		}
+	}
+return degree;
+} 
+
+MatrixType Polygon::ComputeD(unsigned int k) {
+	
+	//dimensions: Ndof x nk dove Ndof=dimVk=nvert+nvert*(k-1)+n_(k-2)
+	MatrixType D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
+	std::cout<<"Created matrix D with size "<<D.rows()<<" x "<<D.cols()<<std::endl;
+
+	std::vector<Point> P=getPoints();
+	//for (auto i: P) std::cout<<i;
+	std::vector<Point> BD=getDof();
+	//for (auto i: BD) std::cout<<i;
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+  	
+
+	for (unsigned int j=0; j<D.cols(); j++) {
+		std::array<int,2> actualdegree=degree[j];
+		for (unsigned int i=0; i<D.rows(); i++){
+
+			//polinomio da valutare
+			auto f= [C,diam,actualdegree] (double x,double y)
+				{return pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,actualdegree[1]);};
+
+			//inserisco nella matrice
+			if (i<vertexes.size()) D(i,j)=f(P[i][0],P[i][1]);
+			if (i>=vertexes.size() && i<vertexes.size()+dof.size()) 
+			{
+				D(i,j)=f(BD[i-vertexes.size()][0],BD[i-vertexes.size()][1]);
+				//std::cout<<i<<j<<"   "<<BD[i-vertexes.size()][0]<<"  "<<BD[i-vertexes.size()][1]<<std::endl;
+			}
+			//devo calcolare gli integrali dei polinomi
+			//if (i>=vertexes.size()+dof.size()) D(i,j)=ComputeIntegral(k,actualdegree[0],actualdegree[1]);
+		}
+	}
+
+
+	return D;
+}

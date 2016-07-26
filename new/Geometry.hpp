@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <iostream>
+#include <Eigen/Dense>
 
 //class representing a point in 2D
 class Point {
@@ -64,7 +65,7 @@ inline  Point operator *(const double & d, const Point & p)
 //END OF CLASS POINT
 
 
-
+using MatrixType=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>;
 
 class Polygon {
 public:
@@ -95,8 +96,12 @@ public:
 	Point centroid() const;
 	double diameter() const;
 
-	//set dof
+	//boundary dof
 	void setDof(std::vector<unsigned int> const &, std::vector<Point> *);
+	std::vector<Point> getDof() const;
+
+	//local matrices
+	MatrixType ComputeD(unsigned int k);
 
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);
