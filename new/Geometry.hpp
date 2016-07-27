@@ -95,6 +95,8 @@ public:
 	double area() const;
 	Point centroid() const;
 	double diameter() const;
+	
+	Point Normal(unsigned int edge_num);
 
 	//boundary dof
 	void setDof(std::vector<unsigned int> const &, std::vector<Point> *);
@@ -102,6 +104,7 @@ public:
 
 	//local matrices
 	MatrixType ComputeD(unsigned int k);
+	MatrixType ComputeB(unsigned int k);
 
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);
