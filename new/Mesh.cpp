@@ -130,20 +130,27 @@ void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<dou
 	std::vector<double> W,N;
 	nodes.clear(); weights.clear(); 
 	if (k==1) ;
-	if (k==2) N.push_back(0.0); W.push_back(4.0/3.0);
+	if (k==2) {N.push_back(0.0); W.push_back(1.0/3.0); W.push_back(4.0/3.0); W.push_back(1.0/3.0);}
 	if (k>=3) std::cout<<"Error";
 
 	//ciclo su tutti i lati
 	for (unsigned int i=0; i<points.size(); ++i){
 		Point a=points[i], b=points[(i+1)%points.size()];
+		double length=distance(a,b);
 		//mappo i nodi e pesi per ogni lato
+		weights.push_back(length/2*W[0]);
 		for (unsigned int j=0; j<N.size(); ++j) {
-			nodes.push_back(Point{(b[0]-a[0])/2.0*N[j]+(b[0]+a[0])/2.0,(b[1]-a[1])/2.0*N[j]+(b[1]+a[1])/2.0});
-			weights.push_back(std::max((b[0]-a[0])/2.0,(b[1]-a[1])/2.0)*W[j]);
+			nodes.push_back(Point((b[0]-a[0])/2*(1+N[j])+a[0],(b[1]-a[1])/2*(1+N[j])+a[1]));
+			weights.push_back(length/2*W[j+1]);
+			//nodes.push_back(Point{(b[0]-a[0])/2.0*N[j]+(b[0]+a[0])/2.0,(b[1]-a[1])/2.0*N[j]+(b[1]+a[1])/2.0});
+			//weights.push_back(std::max((b[0]-a[0])/2.0,(b[1]-a[1])/2.0)*W[j]);
 		}
+		weights.push_back(length/2*W[0]);
 	}
-	//devo anche aggiungere a inizio e fine i pesi associati ai vertici!!
-	//for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
+	
+
+	for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
+	for (auto i : weights) std::cout<<"weights on edges "<<i<<std::endl;
 	return;
 }
 
