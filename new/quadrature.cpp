@@ -7,6 +7,7 @@ std::ostream & operator << (std::ostream & ost, const Quadrature & Q){
 	return ost;
 }
 
+//calcola nodi e pesi di GL su un generico intervallo
 void Gauss_Leg(double a, double b, unsigned int n, std::vector<double> & nodes,std::vector<double> & weights){
 	double m=(n+1)/2.0;
 	double xm=(a+b)/2,xl=(b-a)/2;
@@ -40,4 +41,22 @@ void Gauss_Leg(double a, double b, unsigned int n, std::vector<double> & nodes,s
 		weights[n-i]=weights[i-1];
 	}
 	return;
+}
+
+//calcola nodi e pesi di GL 1D e 2D sul triangolo di riferimenti
+//quelli 1D vanno bene solo sui cateti, ma potrebbero non essere necessari
+void reference(unsigned int n,
+	std::vector<double> & nodes1d, std::vector<double> & weights1d, std::vector<Point> & nodes2d, std::vector<double> & weights2d){
+Gauss_Leg(0.0,1.0,n,nodes1d,weights1d);
+
+std::vector<double> x,w;
+Gauss_Leg(-1.0,1.0,n,x,w);
+
+for (unsigned int i=0; i<n; i++){
+	for (unsigned int j=0; j<n; j++){
+		nodes2d.push_back(Point((1+x[i])/2.0,(1-x[i])*(1+x[j])/4.0));
+		weights2d.push_back((1-x[i])*w[i]*w[j]/8.0);
+	}
+}
+return;
 }

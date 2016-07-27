@@ -35,21 +35,19 @@ cout<<p.ComputeD(2)<<endl;
 
 Quadrature Q(p);
 cout<<Q;
-
+/*
 std::vector<double> nodes, weights;
-double a=0.0,b=1.0;
-unsigned int n=10;
-Gauss_Leg(a,b,n,nodes,weights);
-for (auto i : nodes) cout<<"nodi "<<i<<endl;
-for (auto i : weights) cout<<"pesi "<<i<<endl;
-
-Gauss_Leg(-1.0,4.0,6,nodes,weights);
-for (auto i : nodes) cout<<"nodi "<<i<<endl;
-for (auto i : weights) cout<<"pesi "<<i<<endl;
-
 Gauss_Leg(1.0,2.0,4,nodes,weights);
 for (auto i : nodes) cout<<"nodi "<<i<<endl;
 for (auto i : weights) cout<<"pesi "<<i<<endl;
+*/
+std::vector<double> nodes1d, weights1d,weights2d;
+std::vector<Point> nodes2d;
+reference(3,nodes1d,weights1d,nodes2d,weights2d);
+for (auto i : nodes1d) cout<<"nodi "<<i<<endl;
+for (auto i : weights1d) cout<<"pesi "<<i<<endl;
+for (auto i : nodes2d) cout<<"nodi "<<i<<endl;
+for (auto i : weights2d) cout<<"pesi "<<i<<endl;
 
 return 0;
 }

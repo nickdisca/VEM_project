@@ -25,5 +25,7 @@ private:
 };
 
 void Gauss_Leg(double a, double b, unsigned int n, std::vector<double> & nodes,std::vector<double> & weights);
+void reference(unsigned int n,
+	std::vector<double> & nodes1d, std::vector<double> & weights1d, std::vector<Point> & nodes2d, std::vector<double> & weights2d);
 
 #endif
