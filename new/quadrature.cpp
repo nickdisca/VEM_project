@@ -60,3 +60,28 @@ for (unsigned int i=0; i<n; i++){
 }
 return;
 }
+
+
+std::vector<std::array<Point,3> > Quadrature::divide(){
+	Point C=P.centroid();
+	std::vector<Point> poi=P.getPoints();
+	std::vector<std::array<Point,3> > vect;
+	for (unsigned int i=0; i<poi.size(); i++) 
+		vect.push_back({{poi[i],poi[(i+1)%P.size()],C}});
+	for (auto i : vect) {for (auto j : i) std::cout<<j; std::cout<<std::endl;}
+	return vect;
+}
+
+double Quadrature::local_int(std::array<Point,3> & tria, std::function<double(double)> f, unsigned int n){
+std::cout<<"Hey"<<f(0.0)<<std::endl;
+return 0.0;
+}
+
+double Quadrature::global_int(std::function<double(double)> f, unsigned int n){
+	double res{0.0};
+	std::vector<std::array<Point,3> > triangles=this->divide();
+	for (unsigned int i=0; i<triangles.size(); i++){
+		res+=this->local_int(triangles[i],f,n);
+	}
+	return res;
+}

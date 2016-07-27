@@ -44,10 +44,15 @@ for (auto i : weights) cout<<"pesi "<<i<<endl;
 std::vector<double> nodes1d, weights1d,weights2d;
 std::vector<Point> nodes2d;
 reference(3,nodes1d,weights1d,nodes2d,weights2d);
-for (auto i : nodes1d) cout<<"nodi "<<i<<endl;
-for (auto i : weights1d) cout<<"pesi "<<i<<endl;
-for (auto i : nodes2d) cout<<"nodi "<<i<<endl;
-for (auto i : weights2d) cout<<"pesi "<<i<<endl;
+//for (auto i : nodes1d) cout<<"nodi "<<i<<endl;
+//for (auto i : weights1d) cout<<"pesi "<<i<<endl;
+//for (auto i : nodes2d) cout<<"nodi "<<i<<endl;
+//for (auto i : weights2d) cout<<"pesi "<<i<<endl;
+cout<<"The polygon is divided in these triangles:"<<endl;
+auto V=Q.divide();
+auto f=[](double x){return 0.0*x;};
+unsigned int n=3; //number of points on each edge
+cout<<"The global integral is = "<<Q.global_int(f,n)<<endl;
 
 return 0;
 }

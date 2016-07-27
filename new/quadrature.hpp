@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <Eigen/Dense>
+#include <functional>
 #include "Geometry.hpp"
 
 class Quadrature {
@@ -18,6 +19,13 @@ public:
 
 	//output
 	friend std::ostream & operator << (std::ostream &, const Quadrature &);
+
+	//divide in triangles (restituisce un vettore di "triangoli")
+	std::vector<std::array<Point,3> > divide();
+
+	//calcola integrale globale sul poligono
+	double local_int(std::array<Point,3> & tria, std::function<double(double)> f, unsigned int n);
+	double global_int(std::function<double(double)> f, unsigned int n);
 
 
 private:
