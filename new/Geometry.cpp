@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include "Geometry.hpp"
+#include "quadrature.hpp"
 #include "freefunc.hpp"
 
 Point Point::operator *(const double & d) const
@@ -134,7 +135,17 @@ MatrixType Polygon::ComputeD(unsigned int k) {
 				//std::cout<<i<<j<<"   "<<BD[i-vertexes.size()][0]<<"  "<<BD[i-vertexes.size()][1]<<std::endl;
 			}
 			//devo calcolare gli integrali dei polinomi
-			//if (i>=vertexes.size()+dof.size()) D(i,j)=ComputeIntegral(k,actualdegree[0],actualdegree[1]);
+			if (i>=vertexes.size()+dof.size()) {
+				//std::cout<<i<<j<<std::endl;
+				unsigned int ii=i-vertexes.size()-dof.size();
+				Quadrature Q(*this);
+				unsigned int pow1=actualdegree[0]+degree[ii][0], pow2=actualdegree[1]+degree[ii][1];
+				//cambio la lambda perchè potrei avere int(m_alpha*polinomi)
+				auto p= [C,diam,pow1,pow2] (double x,double y)
+					{return pow((x-C[0])/diam,pow1)*pow((y-C[1])/diam,pow2);};
+				D(i,j)=Q.global_int(f,k);
+			}
+
 		}
 	}
 
@@ -160,6 +171,7 @@ MatrixType Polygon::ComputeB(unsigned int k){
 	//ho bisogno di sapere i pesi associati (da migliorare assolutamente)
 	std::vector<Point> dummy;
 	std::vector<double> weights;
+	std::cout<<"Here"<<std::endl;
 	computeDOF(P,k,weights,dummy);
 	//for (auto i : weights) std::cout<<i<<std::endl;
 

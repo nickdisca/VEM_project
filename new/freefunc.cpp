@@ -16,9 +16,9 @@ return degree;
 //free function, returns weights and points of GLL
 void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<double> & weights,std::vector<Point> & nodes){
 	std::vector<double> W,N;
-	double length;
-	nodes.clear(); weights.clear(); 
-	if (k==1) ;
+	double length; 
+	nodes.clear(); weights.clear();
+	if (k==1) {W.push_back(1.0); W.push_back(1.0);}
 	if (k==2) {N.push_back(0.0); W.push_back(1.0/3.0); W.push_back(4.0/3.0); W.push_back(1.0/3.0);}
 	if (k>=3) std::cout<<"Error";
 
