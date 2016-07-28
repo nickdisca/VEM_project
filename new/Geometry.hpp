@@ -105,6 +105,7 @@ public:
 	//local matrices
 	MatrixType ComputeD(unsigned int k);
 	MatrixType ComputeB(unsigned int k);
+	MatrixType ComputeG(unsigned int k);
 
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);

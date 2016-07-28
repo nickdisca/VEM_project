@@ -98,7 +98,7 @@ Point Polygon::Normal(unsigned int edge_num){
 	N.setCoordinates(aux[1],-aux[0]);
 	//std::cout<<"The normal vector is: "<<N<<std::endl;
 	N=N*(1.0/distance(Point(0.0,0.0),N));
-	std::cout<<"The normal versor is: "<<N<<std::endl;
+	//std::cout<<"The normal versor is: "<<N<<std::endl;
 	return N;
 }
 
@@ -183,7 +183,7 @@ MatrixType Polygon::ComputeB(unsigned int k){
 	unsigned int aux=0;
 	for (unsigned int j=0; j<vertexes.size()+dof.size(); j++) {
 		//da controllare posizione di aux
-		int jj=j-vertexes.size();
+		int jj=(j-vertexes.size());
 		if (j>=vertexes.size()){
 		if (aux!=0 && aux%(k-1)==0) aux=aux+2;
 		aux++;
@@ -214,7 +214,8 @@ MatrixType Polygon::ComputeB(unsigned int k){
 			//contributi dovuti alle funzioni di base relative ai dof sul bordo
 			else {
 				//std::cout<<"Taking position number "<<aux<<std::endl;
-				B(i,j)=(Normal(jj+1)[0]*fx(BD[jj][0],BD[jj][1])+Normal(jj+1)[1]*fy(BD[jj][0],BD[jj][1]))*weights[aux];
+				B(i,j)=(Normal(jj/(k-1)+1)[0]*fx(BD[jj][0],BD[jj][1])+
+					Normal(jj/(k-1)+1)[1]*fy(BD[jj][0],BD[jj][1]))*weights[aux];
 			}
 
 
@@ -248,4 +249,117 @@ else {
 
 
 return B;
+}
+
+
+
+
+//compute directly the matrix G (only for a control)
+MatrixType Polygon::ComputeG(unsigned int k){
+
+	//dimensions: nk x nk
+	MatrixType G((k+2)*(k+1)/2,(k+2)*(k+1)/2);
+	std::cout<<"Created matrix G with size "<<G.rows()<<" x "<<G.cols()<<std::endl;
+	G.fill(0.0); //to be sure that it is initialized
+	std::vector<Point> P=getPoints();
+	//for (auto i: P) std::cout<<i;
+	std::vector<Point> BD=getDof();
+	//for (auto i: BD) std::cout<<i;
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+
+	//ho bisogno di sapere i pesi associati (da migliorare assolutamente)
+	std::vector<Point> dummy;
+	std::vector<double> weights;
+	std::cout<<"Here"<<std::endl;
+	computeDOF(P,k,weights,dummy);
+	//for (auto i : weights) std::cout<<i<<std::endl;
+
+
+	//ciclo sulle colonne (se parto da 0 calcola tutto lui, se parto da 1 sfrutto definizione)
+	for (unsigned int j=1; j<G.cols(); j++) {
+
+
+		for (unsigned int i=1; i<G.rows(); i++){
+			std::array<int,2> actualdegreeI=degree[i];
+			std::array<int,2> actualdegreeJ=degree[j];
+
+			//calcolo le componenti del gradiente
+		auto poli=[C,diam,actualdegreeJ] (double x,double y)	
+{return pow((x-C[0])/diam,actualdegreeJ[0])*pow((y-C[1])/diam,actualdegreeJ[1]);};
+			auto gradx=[C,diam,actualdegreeI] (double x,double y)	
+{return actualdegreeI[0]/diam*pow((x-C[0])/diam,std::max(actualdegreeI[0]-1,0))*pow((y-C[1])/diam,actualdegreeI[1]);};
+			auto grady=[C,diam,actualdegreeI] (double xx,double yy)	
+{return actualdegreeI[1]/diam*pow((xx-C[0])/diam,actualdegreeI[0])*pow((yy-C[1])/diam,std::max(actualdegreeI[1]-1,0));};
+			
+
+			std::cout<<i<<j<<std::endl;
+
+			for (unsigned int z=0; z<this->size(); z++) {
+				//vertice iniziale di ogni lato
+				//std::cout<<"vertex number"<<z<<"weight number"<<z*(k+1)<<std::endl;
+				G(i,j)+=(Normal(z+1)[0]*gradx(P[z][0],P[z][1])+Normal(z+1)[1]*grady(P[z][0],P[z][1]))*
+					poli(P[z][0],P[z][1])*weights[z*(k+1)];
+				//vertice finale di ogni lato
+				unsigned int aux=(z+1)%this->size();
+				unsigned int position=(aux==0 ? weights.size()-1 : (k+1)*aux-1);
+				//std::cout<<"vertex number"<<aux<<"weight number"<<position<<std::endl;
+				G(i,j)+=(Normal(z+1)[0]*gradx(P[aux][0],P[aux][1])+Normal(z+1)[1]*grady(P[aux][0],P[aux][1]))*
+					poli(P[aux][0],P[aux][1])*weights[position];
+			}
+			//BD intermedi
+			int aux=-2;
+			for (unsigned int z=0; z<BD.size(); z++){
+				if (z%(k-1)==0) aux=aux+2;
+				aux++;
+				//std::cout<<"BD number"<<z<<"weight number"<<aux<<std::endl;
+				G(i,j)+=(Normal(z/(k-1)+1)[0]*gradx(BD[z][0],BD[z][1])+
+					Normal(z/(k-1)+1)[1]*grady(BD[z][0],BD[z][1]))*poli(BD[z][0],BD[z][1])*weights[aux];
+			}
+
+			//std::cout<<"i  "<<i<<" j   "<<j<<"    "<<G(i,j)<<std::endl;
+
+			//termini interni
+			if (actualdegreeI[0]<=1 && actualdegreeI[1]<=1) ;
+			else {
+			Quadrature Q(*this);
+			//labmbda fun defining the integral function
+			auto fun=[C,diam,actualdegreeI,actualdegreeJ] (double x, double y){
+				int d1=actualdegreeI[0], d2=actualdegreeI[1];
+				double res=d1*(d1-1)/(diam*diam)*pow((x-C[0])/diam,std::max(d1-2,0))*pow((y-C[1])/diam,d2);
+				res+=d2*(d2-1)/(diam*diam)*pow((x-C[0])/diam,d1)*pow((y-C[1])/diam,std::max(d2-2,0));
+				res=res*pow((x-C[0])/diam,actualdegreeJ[0])*pow((y-C[1])/diam,actualdegreeJ[1]);
+				return res;
+			}; 
+			G(i,j)=G(i,j)-Q.global_int(fun,k);
+			}
+
+		} //ciclo su i
+	} //ciclo su j
+
+
+//prima riga
+if (k>=2){
+	for (unsigned int j=0; j<G.cols(); j++){
+		std::array<int,2> grado=degree[j];
+		auto poli=[C,diam,grado] (double x,double y)	
+			{return pow((x-C[0])/diam,grado[0])*pow((y-C[1])/diam,grado[1]);};
+		Quadrature Q(*this);
+		G(0,j)=1.0/A*Q.global_int(poli,k);
+	}
+}
+else {
+	for (unsigned int j=0; j<G.cols(); j++){
+		std::array<int,2> grado=degree[j];
+		auto poli=[C,diam,grado] (double x,double y)	
+			{return pow((x-C[0])/diam,grado[0])*pow((y-C[1])/diam,grado[1]);};
+			for (unsigned int i=0; i<this->size(); i++) G(0,j)+=poli(P[i][0],P[i][1]);
+		G(0,j)=G(0,j)/this->size();
+	}
+}
+
+
+return G;
 }

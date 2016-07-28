@@ -68,7 +68,7 @@ std::vector<std::array<Point,3> > Quadrature::divide(){
 	std::vector<std::array<Point,3> > vect;
 	for (unsigned int i=0; i<poi.size(); i++) 
 		vect.push_back({{poi[i],poi[(i+1)%P.size()],C}});
-	for (auto i : vect) {for (auto j : i) std::cout<<j; std::cout<<std::endl;}
+	//for (auto i : vect) {for (auto j : i) std::cout<<j; std::cout<<std::endl;}
 	return vect;
 }
 
