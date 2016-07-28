@@ -24,8 +24,12 @@ public:
 	std::vector<std::array<Point,3> > divide();
 
 	//calcola integrale globale sul poligono
-	double local_int(std::array<Point,3> & tria, std::function<double(double)> f, unsigned int n);
-	double global_int(std::function<double(double)> f, unsigned int n);
+	double local_int(std::array<Point,3> & tria, std::function<double(double,double)> f, unsigned int n);
+	double global_int(std::function<double(double,double)> f, unsigned int n);
+
+	//mappa e valutazione
+	double map(std::array<Point,3> & p, MatrixType & B, MatrixType & b);
+	Point map_eval(Point & x,MatrixType & B, MatrixType & b);
 
 
 private:

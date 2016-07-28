@@ -50,7 +50,8 @@ reference(3,nodes1d,weights1d,nodes2d,weights2d);
 //for (auto i : weights2d) cout<<"pesi "<<i<<endl;
 cout<<"The polygon is divided in these triangles:"<<endl;
 auto V=Q.divide();
-auto f=[](double x){return 0.0*x;};
+//auto f=[](double x,double y){return 0.5*x*y;};
+auto f=[](double x,double y){return x*x;};
 unsigned int n=3; //number of points on each edge
 cout<<"The global integral is = "<<Q.global_int(f,n)<<endl;
 

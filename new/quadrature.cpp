@@ -72,16 +72,46 @@ std::vector<std::array<Point,3> > Quadrature::divide(){
 	return vect;
 }
 
-double Quadrature::local_int(std::array<Point,3> & tria, std::function<double(double)> f, unsigned int n){
-std::cout<<"Hey"<<f(0.0)<<std::endl;
-return 0.0;
+double Quadrature::local_int(std::array<Point,3> & tria, std::function<double(double,double)> f, unsigned int n){
+	//std::cout<<"Hey"<<f(0.0)<<std::endl;
+	std::vector<double> nodes1d, weights1d,weights2d;
+	std::vector<Point> nodes2d;
+	reference(n,nodes1d,weights1d,nodes2d,weights2d); //calcola nodi e pesi sul triangolo di riferimento
+
+	MatrixType B,b;
+	double det=map(tria,B,b);
+	double res{0.0};
+
+	for (unsigned int i=0; i<nodes2d.size(); i++){
+		Point p=map_eval(nodes2d[i],B,b);
+		res+=f(p[0],p[1])*weights2d[i];
+	}
+	return res*det;
 }
 
-double Quadrature::global_int(std::function<double(double)> f, unsigned int n){
+double Quadrature::global_int(std::function<double(double,double)> f, unsigned int n){
 	double res{0.0};
 	std::vector<std::array<Point,3> > triangles=this->divide();
 	for (unsigned int i=0; i<triangles.size(); i++){
 		res+=this->local_int(triangles[i],f,n);
 	}
 	return res;
+}
+
+double Quadrature::map(std::array<Point,3> & p, MatrixType & B, MatrixType & b){
+	//MatrixType B(2,2, MatrixType b;
+	B.resize(2,2); b.resize(2,1);
+	Point aa=p[0],bb=p[1],cc=p[2];
+	B(0,0)=bb[0]-aa[0]; B(0,1)=cc[0]-aa[0]; B(1,0)=bb[1]-aa[1]; B(1,1)=cc[2]-aa[2];
+	b(0,0)=aa[0]; b(1,0)=aa[1];
+	double det=B(1,1)*B(0,0)-B(1,0)*B(0,1);
+	if (det==0) std::cout<<"Error: determinante = 0"<<std::endl;
+	return det;
+}
+
+Point Quadrature::map_eval(Point & x,MatrixType & B, MatrixType & b){
+	MatrixType xx(2,1); xx(0,0)=x[0]; xx(1,0)=x[1];
+	//MatrixType tmp=(B.lu()).solve(xx-b);
+	MatrixType tmp=B*xx+b;
+	return Point(tmp(0,0),tmp(1,0));
 }
