@@ -34,9 +34,9 @@ void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<dou
 			//nodes.push_back(Point{(b[0]-a[0])/2.0*N[j]+(b[0]+a[0])/2.0,(b[1]-a[1])/2.0*N[j]+(b[1]+a[1])/2.0});
 			//weights.push_back(std::max((b[0]-a[0])/2.0,(b[1]-a[1])/2.0)*W[j]);
 		}
-		//weights.push_back(length/2*W[W.size()-1]); non mi serve per simmetria, coincide con il primo del lato dopo
+		weights.push_back(length/2*W[W.size()-1]); 
 	}
-	weights.push_back(length/2*W[W.size()-1]);
+	//weights.push_back(length/2*W[W.size()-1]); non posso metterlo in fondo!!!
 	
 	for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
 	for (auto i : weights) std::cout<<"weights on edges "<<i<<std::endl;

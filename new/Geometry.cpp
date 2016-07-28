@@ -98,7 +98,7 @@ Point Polygon::Normal(unsigned int edge_num){
 	N.setCoordinates(aux[1],-aux[0]);
 	//std::cout<<"The normal vector is: "<<N<<std::endl;
 	N=N*(1.0/distance(Point(0.0,0.0),N));
-	//std::cout<<"The normal versor is: "<<N<<std::endl;
+	std::cout<<"The normal versor is: "<<N<<std::endl;
 	return N;
 }
 
@@ -178,9 +178,10 @@ MatrixType Polygon::ComputeB(unsigned int k){
 
 	unsigned int aux=0;
 	for (unsigned int j=0; j<vertexes.size()+dof.size(); j++) {
+		//da controllare posizione di aux
 		int jj=j-vertexes.size();
 		if (j>=vertexes.size()){
-		if (aux!=0 && aux%(k-1)==0) aux++;
+		if (aux!=0 && aux%(k-1)==0) aux=aux+2;
 		aux++;
 		}
 
@@ -197,12 +198,13 @@ MatrixType Polygon::ComputeB(unsigned int k){
 			std::cout<<i<<j<<std::endl;
 			//contributi dovuti alle funzioni di base relative ai vertici
 			if (j<vertexes.size()){
-				B(i,j)=(Normal(j+1)[0]*fx(P[j][0],P[j][1])+Normal(j+1)[1]*fy(P[j][0],P[j][1]))*weights[j*k];
+				B(i,j)=(Normal(j+1)[0]*fx(P[j][0],P[j][1])+Normal(j+1)[1]*fy(P[j][0],P[j][1]))*weights[j*(k+1)];
 				//std::cout<<"B("<<i<<","<<j<<")="<<B(i,j)<<std::endl;
 				unsigned int next=(j==0 ? vertexes.size() : j);
 			//B(i,j)+=((Normal(next)[0]*fx(P[next%(vertexes.size())].x(),vertexes[next%(vertexes.size())].y())+
 			//	Normal(next).y()*fy(vertexes[next%(vertexes.size())].x(),vertexes[next%(vertexes.size())].y()))*IntegralWithDof(k,next,2));
-				B(i,j)+=(Normal(next)[0]*fx(P[j][0],P[j][1])+Normal(next)[1]*fy(P[j][0],P[j][1]))*weights[j*k];
+				unsigned int position=(j==0 ? weights.size()-1 : j*(k+1)-1);
+				B(i,j)+=(Normal(next)[0]*fx(P[j][0],P[j][1])+Normal(next)[1]*fy(P[j][0],P[j][1]))*weights[position];
 			}
 
 			//contributi dovuti alle funzioni di base relative ai dof sul bordo
