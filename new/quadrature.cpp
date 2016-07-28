@@ -86,6 +86,7 @@ double Quadrature::local_int(std::array<Point,3> & tria, std::function<double(do
 		Point p=map_eval(nodes2d[i],B,b);
 		res+=f(p[0],p[1])*weights2d[i];
 	}
+	//std::cout<<"Local integral"<<res*det<<std::endl;
 	return res*det;
 }
 
@@ -102,11 +103,11 @@ double Quadrature::map(std::array<Point,3> & p, MatrixType & B, MatrixType & b){
 	//MatrixType B(2,2, MatrixType b;
 	B.resize(2,2); b.resize(2,1);
 	Point aa=p[0],bb=p[1],cc=p[2];
-	B(0,0)=bb[0]-aa[0]; B(0,1)=cc[0]-aa[0]; B(1,0)=bb[1]-aa[1]; B(1,1)=cc[2]-aa[2];
+	B(0,0)=bb[0]-aa[0]; B(0,1)=cc[0]-aa[0]; B(1,0)=bb[1]-aa[1]; B(1,1)=cc[1]-aa[1];
 	b(0,0)=aa[0]; b(1,0)=aa[1];
 	double det=B(1,1)*B(0,0)-B(1,0)*B(0,1);
 	if (det==0) std::cout<<"Error: determinante = 0"<<std::endl;
-	return det;
+	return std::abs(det);
 }
 
 Point Quadrature::map_eval(Point & x,MatrixType & B, MatrixType & b){

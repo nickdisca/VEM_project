@@ -117,6 +117,7 @@ MatrixType Polygon::ComputeD(unsigned int k) {
 	std::vector<std::array<int,2> > degree=Polynomials(k);
 	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
 	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
   	
 
 	for (unsigned int j=0; j<D.cols(); j++) {
@@ -143,7 +144,9 @@ MatrixType Polygon::ComputeD(unsigned int k) {
 				//cambio la lambda perchè potrei avere int(m_alpha*polinomi)
 				auto p= [C,diam,pow1,pow2] (double x,double y)
 					{return pow((x-C[0])/diam,pow1)*pow((y-C[1])/diam,pow2);};
-				D(i,j)=Q.global_int(f,k);
+
+				//auto ppp=[=](double x,double y){return 1.0;}; D(i,j)=Q.global_int(ppp,k);
+				D(i,j)=1.0/A*Q.global_int(p,k);
 			}
 
 		}
@@ -167,6 +170,7 @@ MatrixType Polygon::ComputeB(unsigned int k){
 	std::vector<std::array<int,2> > degree=Polynomials(k);
 	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
 	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
 
 	//ho bisogno di sapere i pesi associati (da migliorare assolutamente)
 	std::vector<Point> dummy;
@@ -227,8 +231,8 @@ for (unsigned int j=vertexes.size()+dof.size(); j<B.cols(); j++){
 		else {
 		double coeff1=actualdegree[0]*(actualdegree[0]-1)/(diam*diam);
 		double coeff2=actualdegree[1]*(actualdegree[1]-1)/(diam*diam);
-		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) B(i,j)=-coeff1;
-		if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) B(i,j)=-coeff2;
+		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) B(i,j)=-coeff1*A;
+		if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) B(i,j)=-coeff2*A;
 		}
 	}
 }

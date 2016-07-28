@@ -31,7 +31,8 @@ p.setDof(line,&dof);
 cout<<p;
 cout<<"Matrix B:"<<endl<<p.ComputeB(2)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(2)<<endl;
-
+*/
+/*
 //test with unit square (k=1)
 std::vector<Point> poi; 
 poi.push_back(Point(0.0,0.0)); poi.push_back(Point(1.0,0.0)); poi.push_back(Point(1.0,1.0)); poi.push_back(Point(0.0,1.0));
@@ -46,7 +47,7 @@ cout<<"Matrix B:"<<endl<<p.ComputeB(1)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(1)<<endl;
 */
 
-
+/*
 //test with pentagon (k=1)
 std::vector<Point> poi; 
 poi.push_back(Point(0.0,0.0)); poi.push_back(Point(3.0,0.0)); poi.push_back(Point(3.0,2.0)); poi.push_back(Point(1.5,4.0));
@@ -60,6 +61,24 @@ p.setDof(ll,&dof);
 cout<<p;
 cout<<"Matrix B:"<<endl<<p.ComputeB(1)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(1)<<endl;
+*/
+/*
+//test with unit pentagon (k=2)
+std::vector<Point> poi; 
+poi.push_back(Point(0.0,0.0)); poi.push_back(Point(3.0,0.0)); poi.push_back(Point(3.0,2.0)); poi.push_back(Point(1.5,4.0));
+	poi.push_back(Point(0.0,4.0));
+std::vector<unsigned int> line;
+line.push_back(0); line.push_back(1); line.push_back(2); line.push_back(3); line.push_back(4);
+Polygon p(line,&poi);
+std::vector<Point> dof; 
+dof.push_back(Point(1.5,0.0)); dof.push_back(Point(3.0,1.0)); dof.push_back(Point(2.25,3.0)); dof.push_back(Point(0.75,4.0));
+	dof.push_back(Point(0.0,2.0));
+p.setDof(line,&dof);
+cout<<p;
+cout<<"Matrix B:"<<endl<<p.ComputeB(2)<<endl;
+cout<<"Matrix D:"<<endl<<p.ComputeD(2)<<endl;
+*/
+
 
 
 /*
