@@ -363,3 +363,18 @@ else {
 
 return G;
 }
+
+
+MatrixType Polygon::LocalStiffness(unsigned int k){
+	MatrixType B=ComputeB(k), D=ComputeD(k);
+	MatrixType G=B*D; //ComputeG(k);
+	MatrixType Pistar=(G.lu()).solve(B);
+	MatrixType Pi=D*Pistar;
+	MatrixType I; I.setIdentity(Pi.rows(),Pi.cols());
+
+	//G non mi serve più, posso rinominarla come Gtilda
+	//nota: topRows usa notazione alla matlab
+	G.topRows(1).fill(0.0);
+
+	return Pistar.transpose()*G*Pistar+(I-Pi).transpose()*(I-Pi);
+}
