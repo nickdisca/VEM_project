@@ -191,7 +191,7 @@ MatrixType Mesh::GlobalStiffness(){
 		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
 		std::vector<unsigned int> current=line1;
 		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
-		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[i]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
 
 		std::cout<<"Current dofs: ";
 		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
@@ -204,6 +204,47 @@ MatrixType Mesh::GlobalStiffness(){
 		}
 		} //end for of polygons
 	return K;
+}
+
+void Mesh::solve(){
+	MatrixType K=GlobalStiffness();
+	std::vector<unsigned int> Dir=Dirichlet();
+	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());
+	std::cout<<KII.rows()<<"  "<<KII.cols()<<std::endl;
+	MatrixType KIB(K.rows()-Dir.size(),Dir.size());
+	std::cout<<KIB.rows()<<"  "<<KIB.cols()<<std::endl;
+	int ii=-1, jj=0,jjj=0;
+
+	for (unsigned int i=0; i<K.rows(); i++){
+		std::cout<<i<<std::endl;
+		jj=0; jjj=0;
+		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
+		ii++; //se la i non è di Dirichlet aumenta di 1
+		for (unsigned int j=0; j<K.cols(); j++){
+			if (find(Dir.begin(),Dir.end(),j)==Dir.end()) //se anche j non è di Dirichlet inserisci in KII
+				{KII(ii,jj)=K(i,j); std::cout<<"internal"<<ii<<"  "<<jj<<std::endl; jj++;}
+			else {KIB(ii,jjj)=K(i,j); std::cout<<"boundary"<<ii<<"  "<<jjj<<std::endl; jjj++;}
+		}
+		}
+	} //fine for
+	std::cout<<KII<<std::endl;
+	std::cout<<KIB<<std::endl;
+}
+
+std::vector<unsigned int> Mesh::Dirichlet(){
+	std::vector<unsigned int> Dir=M_boundary;
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		for (unsigned int j=0; j<line1.size(); j++){
+			//se entrambi gli estremi sono di bordo, allora il dof è di bordo
+			if (find(M_boundary.begin(), M_boundary.end(),line1[j])!=M_boundary.end() &&
+				find(M_boundary.begin(), M_boundary.end(),line1[(j+1)%line1.size()])!=M_boundary.end())
+				{for (unsigned int z=0; z<k-1; z++) Dir.push_back(line2[j*(k-1)+z]+M_pointList.size());} 
+		}
+	}
+	for (auto i : Dir) std::cout<<"Indici di bordo "<<i<<std::endl;
+	return Dir;
 }
 
 /*
