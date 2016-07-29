@@ -12,6 +12,7 @@ MeshHandler::MeshHandler(Mesh &mesh):
 pointList(mesh.M_pointList),
 elementList(mesh.M_elementList),
 boundary(mesh.M_boundary),
+num_edges(mesh.M_num_edges),
 //edgeList(mesh.M_edgeList),
 //bEdgeList(mesh.M_bEdgeList),
 m(mesh)
@@ -22,11 +23,15 @@ m(mesh)
 
 int MeshReader::read(Mesh & m, std::string const & filename){
 	using namespace std;
+	std::vector<unsigned int> tmp;
 	MeshHandler mesh(m);
 	vector<Point> & pl(mesh.pointList);
 	vector<Polygon> & el(mesh.elementList);
 	ifstream f;
 	string currLine;
+
+	//unsigned int & num_edges(mesh.num_edges);
+
 	f.open(filename.c_str());
 	if (!f.is_open()) {
 		cerr<<"Mesh file does not exist or is corrupted"<<endl;
@@ -81,6 +86,15 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 		el.push_back(Polygon(line,&pl));
 		if(this->M_verbose) 
 			cout<<"Added the polygon "<<el.size()-1<<" which is "<<Polygon(line,&pl)<<endl;
+
+		//devo capire se ho già inserito il lato o no (to be done)
+		/*
+		for (unsigned int j=0; j<line.size(); j++){
+			if (find(tmp.begin(),tmp.end(),line[j])==tmp.end()) tmp.push_back(line[j]);
+			  find(tmp.begin(),tmp.end(),line[(j+1)%line.size()])==tmp.end()
+				{tmp.push_back(line[j]); tmp.push_back(line[(j+1)%line.size()]); num_edges++;}
+		}
+		*/
 	}
 
 	//reads boundary elements (dovrei salvare gli edges, ma qui ho solo le coordinate dei vertici)
@@ -91,6 +105,7 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 			cout<<"Added boundary vertex with index "<<mesh.boundary.size()-1<<" which is "<<stoi(currLine)-1<<endl;
 	}
 	cout<<"Total number of boundary vertexes = "<<mesh.boundary.size()<<endl;
+	//cout<<"Total number of edges = "<<num_edges<<endl;
 
 	return 0;
 
@@ -157,6 +172,61 @@ void Mesh::boundaryDOF(){
 	}
 	return;
 }
+
+
+
+MatrixType Mesh::GlobalStiffness(){
+	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
+
+	//dimensione: dof interni + numero vertici + boundary + dof interni
+	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
+	MatrixType K(dim,dim);
+	std::cout<<"Dimensions "<<dim<<std::endl;
+
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		MatrixType locK=M_elementList[i].LocalStiffness(k);
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		std::vector<unsigned int> line3;
+		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+		std::vector<unsigned int> current=line1;
+		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[i]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+
+		std::cout<<"Current dofs: ";
+		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+
+		//assemble global matrix
+		for (unsigned int a=0; a<locK.rows(); a++){
+			for (unsigned int b=0; b<locK.cols(); b++){
+				K(current[a],current[b])+=locK(a,b);
+			}
+		}
+		} //end for of polygons
+	return K;
+}
+
+/*
+
+
+		vector<unsigned int> V=line;
+		for (auto i : line2) V.push_back(i+coord.size());
+		for (auto i : line3) V.push_back(i+coord.size()+(k-1)*edges.size());
+		for (auto i : V) cout<<i<<" ";
+			cout<<endl;
+		
+		for (unsigned int i=0; i<locK.rows(); i++){
+			for (unsigned int j=0; j<locK.cols(); j++){
+				K(V[i],V[j])+=locK(i,j);
+			}
+		}
+		
+
+	}
+
+	return K;
+};
+*/
 
 
 /*

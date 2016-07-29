@@ -17,6 +17,7 @@ struct MeshHandler{
 	std::vector<Point> & pointList;
 	std::vector<Polygon> & elementList;
 	std::vector<unsigned int> & boundary;
+	unsigned int & num_edges;
 	//std::vector<Edge> & edgeList;
 	//std::vector<Edge> & bEdgeList;
 	Mesh & m;
@@ -82,6 +83,8 @@ public:
 	void boundaryDOF();
 	//! Test mesh consistency
 	//bool checkmesh()const;
+	//!Assemble global stiffness
+	MatrixType GlobalStiffness();
 	//! output
 	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:
@@ -90,6 +93,7 @@ private:
 	std::vector<unsigned int> M_boundary;
 	std::vector<Point> M_edgesDOF;
 	unsigned int k;
+	unsigned int M_num_edges;
 	//std::vector<Edge> M_edgeList;
 	//std::vector<Edge> M_bEdgeList;
 };

@@ -101,6 +101,7 @@ public:
 	//boundary dof
 	void setDof(std::vector<unsigned int> const &, std::vector<Point> *);
 	std::vector<Point> getDof() const;
+	std::vector<unsigned int> getBDindexes(){return dof;};
 
 	//local matrices
 	MatrixType ComputeD(unsigned int k);

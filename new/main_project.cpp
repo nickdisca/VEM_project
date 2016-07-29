@@ -15,10 +15,12 @@ MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
-m.boundaryDOF();
-cout<<m;
+//m.boundaryDOF();
+//cout<<m;
+MatrixType K=m.GlobalStiffness();
+cout<<K<<endl;
 */
-/*
+
 //test with unit square (k=2)
 std::vector<Point> poi; 
 poi.push_back(Point(0.0,0.0)); poi.push_back(Point(1.0,0.0)); poi.push_back(Point(1.0,1.0)); poi.push_back(Point(0.0,1.0));
@@ -32,8 +34,9 @@ cout<<p;
 cout<<"Matrix B:"<<endl<<p.ComputeB(2)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(2)<<endl;
 cout<<"Matrix G:"<<endl<<p.ComputeG(2)<<endl;
-*/
+cout<<"Matrix K (local stiffness):"<<endl<<p. LocalStiffness(2)<<endl;
 
+/*
 //test with unit square (k=1)
 std::vector<Point> poi; 
 poi.push_back(Point(0.0,0.0)); poi.push_back(Point(1.0,0.0)); poi.push_back(Point(1.0,1.0)); poi.push_back(Point(0.0,1.0));
@@ -48,7 +51,7 @@ cout<<"Matrix B:"<<endl<<p.ComputeB(1)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(1)<<endl;
 cout<<"Matrix G:"<<endl<<p.ComputeG(1)<<endl;
 cout<<"Matrix K (local stiffness):"<<endl<<p. LocalStiffness(1)<<endl;
-
+*/
 
 /*
 //test with pentagon (k=1)
