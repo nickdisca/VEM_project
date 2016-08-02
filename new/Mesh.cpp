@@ -282,7 +282,11 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 	for (unsigned int i=0; i<U.rows(); i++){
 		std::cout<<i<<std::endl;
 		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
-			Point PP=M_pointList[i];UB(ii,0)=g(PP[0],PP[1]); ii++;}
+			Point PP;
+			if(i<M_pointList.size()) PP=M_pointList[i];
+			else PP=M_edgesDOF[i-M_pointList.size()];
+			UB(ii,0)=g(PP[0],PP[1]); 
+			ii++;}
 	}
 	std::cout<<UB<<std::endl;
 
@@ -298,6 +302,17 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 		else {U(i,0)=UI(iii,0); iii++;}
 	}
 	std::cout<<"Solution:"<<std::endl<<U<<std::endl;
+
+	//print solution
+	std::ofstream file("output.dat");
+	for (unsigned int i=0; i<M_pointList.size(); i++) 
+		file<<M_pointList[i][0]<<"\t"<<M_pointList[i][1]<<"\t"<<U(i,0)<<std::endl;
+	for (unsigned int i=0; i<M_edgesDOF.size(); i++) 
+		file<<M_edgesDOF[i][0]<<"\t"<<M_edgesDOF[i][1]<<"\t"<<U(i+M_pointList.size(),0)<<std::endl;
+	//internal DOFs
+	//for (unsigned int i=0; i<k*(k-1)/2*M_elementList.size(); i++) 
+	//	file<<"Polygon "<<i/(k*(k-1)/2)<<" dof number "<<i%(k*(k-1)/2)<<" "<<U(i+M_pointList.size()+M_edgesDOF.size(),0)<<std::endl;
+	file<<std::endl;
 //end function
 return U;
 }

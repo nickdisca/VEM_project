@@ -20,18 +20,26 @@ cout<<"Total area = "<<m.area()<<endl;
 //cout<<m;
 MatrixType K=m.GlobalStiffness();
 cout<<K<<endl;
+
 //auto f=[](double x,double y){return 0.0;};
 //auto g=[](double x,double y){return 1.0;};
-double pi=4.0*std::atan(1.0);
-auto f=[pi](double x,double y){return 15.0*std::sin(pi*x)*std::sin(pi*y);};
-auto g=[pi](double x,double y){return (1.0-x)*y*std::sin(pi*x);};
+
+//double pi=4.0*std::atan(1.0);
+//auto f=[pi](double x,double y){return 15.0*std::sin(pi*x)*std::sin(pi*y);};
+//auto g=[pi](double x,double y){return (1.0-x)*y*std::sin(pi*x);};
+
+//exact solution: x^2+y^2
+//auto f=[](double x,double y){return -4.0;};
+//auto g=[](double x,double y){return x*x+y*y;};
+
+//exact solution: sin(x)*sin(y)
+auto f=[](double x,double y){return -2.0*std::sin(x)*std::sin(y);};
+auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+
 MatrixType F=m.GlobalLoad(f);
 cout<<F<<endl;
 MatrixType U=m.solve(f,g);
 
-ofstream file("output.dat");
-for (unsigned int i=0; i<U.rows(); i++) file<<U(i,0)<<endl;
-file<<endl;
 
 /*
 //test with unit square (k=2)
