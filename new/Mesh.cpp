@@ -297,7 +297,7 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 			U(i,0)=UB(ii,0); ii++;}
 		else {U(i,0)=UI(iii,0); iii++;}
 	}
-	std::cout<<U<<std::endl;
+	std::cout<<"Solution:"<<std::endl<<U<<std::endl;
 //end function
 return U;
 }

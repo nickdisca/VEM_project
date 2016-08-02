@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
 #include "Geometry.hpp"
 #include "Mesh.hpp"
 #include "quadrature.hpp"
@@ -10,7 +11,7 @@ int main()
 {
 
 
-std::string str="squares2.dat";
+std::string str="squares.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;
@@ -19,11 +20,18 @@ cout<<"Total area = "<<m.area()<<endl;
 //cout<<m;
 MatrixType K=m.GlobalStiffness();
 cout<<K<<endl;
-auto f=[](double x,double y){return 1.0;};
-auto g=[](double x,double y){return 1.0;};
+//auto f=[](double x,double y){return 0.0;};
+//auto g=[](double x,double y){return 1.0;};
+double pi=4.0*std::atan(1.0);
+auto f=[pi](double x,double y){return 15.0*std::sin(pi*x)*std::sin(pi*y);};
+auto g=[pi](double x,double y){return (1.0-x)*y*std::sin(pi*x);};
 MatrixType F=m.GlobalLoad(f);
 cout<<F<<endl;
-auto U=m.solve(f,g);
+MatrixType U=m.solve(f,g);
+
+ofstream file("output.dat");
+for (unsigned int i=0; i<U.rows(); i++) file<<U(i,0)<<endl;
+file<<endl;
 
 /*
 //test with unit square (k=2)
