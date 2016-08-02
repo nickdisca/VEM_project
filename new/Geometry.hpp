@@ -108,6 +108,9 @@ public:
 	MatrixType ComputeB(unsigned int k);
 	MatrixType ComputeG(unsigned int k);
 	MatrixType LocalStiffness(unsigned int k);
+	MatrixType ComputeH(unsigned int k);
+	MatrixType ComputeC(unsigned int k);
+	MatrixType LoadTerm(unsigned int k,std::function<double (double,double)> f);
 
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);

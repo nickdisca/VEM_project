@@ -378,3 +378,94 @@ MatrixType Polygon::LocalStiffness(unsigned int k){
 
 	return Pistar.transpose()*G*Pistar+(I-Pi).transpose()*(I-Pi);
 }
+
+
+MatrixType Polygon::ComputeH(unsigned int k){
+	MatrixType H((k+1)*(k+2)/2,(k+1)*(k+2)/2);
+	std::cout<<"Created matrix H with size "<<H.rows()<<" x "<<H.cols()<<std::endl;
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+
+	for (unsigned int i=0; i<H.rows(); i++){
+		for (unsigned int j=0; j<H.cols(); j++){
+			std::array<int,2> dgI=degree[i];
+			std::array<int,2> dgJ=degree[j];
+			Quadrature Q(*this);
+			//prodotto dei polinomi
+			auto poli=[C,diam,dgI,dgJ](double x,double y)
+			{double res=pow((x-C[0])/diam,dgI[0])*pow((y-C[1])/diam,dgI[1]);
+				res=res*pow((x-C[0])/diam,dgJ[0])*pow((y-C[1])/diam,dgJ[1]);
+				return res;};
+			//calcolo l'integrale
+			H(i,j)=Q.global_int(poli,k);
+		}
+
+	}
+	return H;
+}
+
+
+MatrixType Polygon::ComputeC(unsigned int k){
+	MatrixType C((k+1)*(k+2)/2,vertexes.size()*k+k*(k-1)/2);
+	std::cout<<"Created matrix C with size "<<C.rows()<<" x "<<C.cols()<<std::endl;
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point centr(centroid()); std::cout<<"Centroid "<<centr;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+	std::cout<<"here";
+
+	for (unsigned int alpha=0; alpha<C.rows(); alpha++){
+		for (unsigned int j=0; j<C.cols(); j++){
+			int jj=j-vertexes.size()-dof.size();
+			if(alpha<k*(k-1)/2) 
+				{ if (jj==alpha) C(alpha,j)=A; else C(alpha,j)=0.0;}
+			else {MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
+				C(alpha,j)=M(alpha,j);}
+		}
+
+	}
+	return C;
+}
+
+MatrixType Polygon::LoadTerm(unsigned int k, std::function<double (double,double)> f){
+	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); F.fill(0.0);
+	std::cout<<"Created matrix/vector F with size "<<F.rows()<<" x "<<F.cols()<<std::endl;
+	MatrixType M=(ComputeH(k).lu()).solve(ComputeC(k));
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+
+	for (unsigned int i=0; i<F.rows(); i++){
+		for (unsigned int alpha=0; alpha<(k+1)*(k+2)/2; alpha++){
+			Quadrature Q(*this);
+			std::array<int,2> actualdegree=degree[alpha];
+			auto fun= [actualdegree,C,diam,f](double x,double y) {
+			return f(x,y)*pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,actualdegree[1]);};
+
+			double integral=Q.global_int(fun,k);
+
+			F(i,0)+=M(alpha,i)*integral;
+		}
+
+	}
+	return F;
+}
+
+/*
+MatrixType AbstractPolygon::LoadTerm(int k){
+	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant=1
+	vector<array<int,2> > degree=Polynomials(k);
+	MatrixType Pi0star=((ComputeH(k).lu()).solve(ComputeC(k)));
+	cout<<Pi0star<<endl;
+	for (unsigned int i=0; i<F.rows(); i++){
+		for (unsigned int alpha=0; alpha<(k+2)*(k+1)/2; alpha++){
+			F(i,0)+=Pi0star(alpha,i)*ComputeIntegral(k,degree[alpha][0],degree[alpha][1]);
+			//cout<<F(i,0)<<"  "<<i<<endl;
+		}
+	}
+	return F;
+}
+*/

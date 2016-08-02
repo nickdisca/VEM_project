@@ -85,9 +85,10 @@ public:
 	//bool checkmesh()const;
 	//!Assemble global stiffness
 	MatrixType GlobalStiffness();
+	MatrixType GlobalLoad(std::function<double(double,double)> f);
 
 	std::vector<unsigned int> Dirichlet();
-	void solve();
+	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g);
 	//! output
 	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:

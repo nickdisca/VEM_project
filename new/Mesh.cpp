@@ -180,7 +180,7 @@ MatrixType Mesh::GlobalStiffness(){
 
 	//dimensione: dof interni + numero vertici + boundary + dof interni
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType K(dim,dim);
+	MatrixType K(dim,dim); K.fill(0.0);
 	std::cout<<"Dimensions "<<dim<<std::endl;
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
@@ -206,13 +206,51 @@ MatrixType Mesh::GlobalStiffness(){
 	return K;
 }
 
-void Mesh::solve(){
+
+
+
+MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
+	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
+
+	//dimensione: dof interni + numero vertici + boundary + dof interni
+	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
+	MatrixType F(dim,1); F.fill(0.0);
+	std::cout<<"Dimensions "<<dim<<std::endl;
+
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		MatrixType locF=M_elementList[i].LoadTerm(k,f);
+		std::cout<<locF;
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		std::vector<unsigned int> line3;
+		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+		std::vector<unsigned int> current=line1;
+		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+
+		std::cout<<"Current dofs: ";
+		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+
+		//assemble global vector
+		for (unsigned int a=0; a<locF.rows(); a++){
+			F(current[a],0)+=locF(a,0);
+		}
+		} //end for of polygons
+	return F;
+}
+
+
+
+
+MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<double (double,double)> g){
 	MatrixType K=GlobalStiffness();
+	MatrixType F=GlobalLoad(f);
 	std::vector<unsigned int> Dir=Dirichlet();
 	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());
 	std::cout<<KII.rows()<<"  "<<KII.cols()<<std::endl;
 	MatrixType KIB(K.rows()-Dir.size(),Dir.size());
 	std::cout<<KIB.rows()<<"  "<<KIB.cols()<<std::endl;
+	MatrixType FI(F.rows()-Dir.size(),1);
 	int ii=-1, jj=0,jjj=0;
 
 	for (unsigned int i=0; i<K.rows(); i++){
@@ -229,6 +267,39 @@ void Mesh::solve(){
 	} //fine for
 	std::cout<<KII<<std::endl;
 	std::cout<<KIB<<std::endl;
+
+	//termine noto
+	ii=0;
+	for (unsigned int i=0; i<F.rows(); i++){
+		std::cout<<i<<std::endl;
+		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {FI(ii,0)=F(i,0); ii++;}
+	}
+	std::cout<<FI<<std::endl;
+
+	//real solution
+	MatrixType U(K.rows(),1), UB(Dir.size(),1);
+	ii=0;
+	for (unsigned int i=0; i<U.rows(); i++){
+		std::cout<<i<<std::endl;
+		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
+			Point PP=M_pointList[i];UB(ii,0)=g(PP[0],PP[1]); ii++;}
+	}
+	std::cout<<UB<<std::endl;
+
+	//solve
+	MatrixType UI(U.rows()-UB.rows(),1);
+	UI=(KII.lu()).solve(FI-KIB*UB);
+	//assemble back
+	ii=0; unsigned int iii=0;
+	for (unsigned int i=0; i<U.rows(); i++){
+		//std::cout<<i<<std::endl;
+		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
+			U(i,0)=UB(ii,0); ii++;}
+		else {U(i,0)=UI(iii,0); iii++;}
+	}
+	std::cout<<U<<std::endl;
+//end function
+return U;
 }
 
 std::vector<unsigned int> Mesh::Dirichlet(){

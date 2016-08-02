@@ -19,7 +19,11 @@ cout<<"Total area = "<<m.area()<<endl;
 //cout<<m;
 MatrixType K=m.GlobalStiffness();
 cout<<K<<endl;
-m.solve();
+auto f=[](double x,double y){return 1.0;};
+auto g=[](double x,double y){return 1.0;};
+MatrixType F=m.GlobalLoad(f);
+cout<<F<<endl;
+auto U=m.solve(f,g);
 
 /*
 //test with unit square (k=2)
@@ -36,6 +40,11 @@ cout<<"Matrix B:"<<endl<<p.ComputeB(2)<<endl;
 cout<<"Matrix D:"<<endl<<p.ComputeD(2)<<endl;
 cout<<"Matrix G:"<<endl<<p.ComputeG(2)<<endl;
 cout<<"Matrix K (local stiffness):"<<endl<<p. LocalStiffness(2)<<endl;
+cout<<"Matrix H:"<<endl<<p.ComputeH(2)<<endl;
+cout<<"Matrix C:"<<endl<<p.ComputeC(2)<<endl;
+auto f=[](double x,double y){return 1.0;};
+cout<<"Vector F:"<<endl<<p.LoadTerm(2,f)<<endl;
+//cout<<(p.ComputeH(2).lu()).solve(p.ComputeC(2));
 */
 /*
 //test with unit square (k=1)
