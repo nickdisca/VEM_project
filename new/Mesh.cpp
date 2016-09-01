@@ -333,6 +333,59 @@ std::vector<unsigned int> Mesh::Dirichlet(){
 	return Dir;
 }
 
+
+MatrixType Mesh::VEMConvert(std::function<double (double,double)> uex){
+
+	//costruisco vettore che approssima con i vem
+	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
+	MatrixType U(dim,1); U.fill(0.0);
+	std::cout<<"Dimensions "<<dim<<std::endl;
+
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		MatrixType locU=M_elementList[i].LocalConvert(k,uex);
+		std::cout<<locU;
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		std::vector<unsigned int> line3;
+		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+		std::vector<unsigned int> current=line1;
+		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+
+		std::cout<<"Current dofs: ";
+		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+
+		//assemble global vector (mi basta un singolo integrale, l'if è indifferente metterlo o no)
+		for (unsigned int a=0; a<locU.rows(); a++){
+			//if (current[a]>=line1.size()+line2.size()) ????
+			//	U(current[a],0)+=locU(a,0);
+			//else 
+				U(current[a],0)=locU(a,0);
+		}
+		} //end for of polygons
+	return U;
+}
+
+
+double Mesh::normInf(MatrixType uex,MatrixType u){
+	unsigned int maxindex=M_pointList.size()+M_edgesDOF.size();
+	MatrixType diff=uex-u;
+	double norm=0.0;
+	for (unsigned int i=0; i<maxindex; i++)
+		norm=std::max(norm,std::abs(diff(i,0)));
+	std::cout<<"Expected"<<norm<<std::endl;
+	maxindex=diff.rows(); norm=0.0;
+	for (unsigned int i=0; i<maxindex; i++)
+		norm=std::max(norm,std::abs(diff(i,0)));
+	std::cout<<"wrong"<<norm<<std::endl;
+	return norm;
+}
+
+double Mesh::H1seminorm(MatrixType uex, MatrixType u, MatrixType K){
+	MatrixType temp=((u-uex).transpose())*K*(u-uex);
+	return temp(0,0);
+}
+
 /*
 
 

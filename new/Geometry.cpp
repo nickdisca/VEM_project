@@ -454,6 +454,36 @@ MatrixType Polygon::LoadTerm(unsigned int k, std::function<double (double,double
 	return F;
 }
 
+MatrixType Polygon::LocalConvert(unsigned int k, std::function<double (double,double)> uex){
+	MatrixType U(vertexes.size()*k+k*(k-1)/2,1); U.fill(0.0);
+	std::cout<<"Created matrix/vector U with size "<<U.rows()<<" x "<<U.cols()<<std::endl;
+	std::vector<std::array<int,2> > degree=Polynomials(k);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+	std::vector<Point> P=getPoints();
+	std::vector<Point> BD=getDof();
+
+	for (unsigned int i=0; i<U.rows(); i++){
+		if (i<vertexes.size()) U(i,0)=uex(P[i][0],P[i][1]);
+		if (i>=vertexes.size() && i<k*vertexes.size()) U(i,0)=uex(BD[i-vertexes.size()][0],BD[i-vertexes.size()][1]);
+		if (i>=k*vertexes.size()) 
+			{
+				unsigned int ii=i-k*vertexes.size();
+				Quadrature Q(*this);
+				std::array<int,2> actualdegree=degree[ii];
+			auto fun= [actualdegree,C,diam,uex](double x,double y) {
+			return uex(x,y)*pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,actualdegree[1]);};
+
+			U(i,0)=1.0/A*Q.global_int(uex,k);
+
+			}
+
+	}
+	return U;
+
+}
+
 /*
 MatrixType AbstractPolygon::LoadTerm(int k){
 	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant=1

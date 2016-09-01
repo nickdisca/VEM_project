@@ -31,14 +31,25 @@ cout<<K<<endl;
 //exact solution: x^2+y^2
 //auto f=[](double x,double y){return -4.0;};
 //auto g=[](double x,double y){return x*x+y*y;};
+//auto uex=[](double x,double y){return x*x+y*y;};
 
 //exact solution: sin(x)*sin(y)
 auto f=[](double x,double y){return -2.0*std::sin(x)*std::sin(y);};
 auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
 
 MatrixType F=m.GlobalLoad(f);
 cout<<F<<endl;
 MatrixType U=m.solve(f,g);
+cout<<"Solution"<<U<<endl;
+
+MatrixType UEX=m.VEMConvert(uex);
+cout<<"Vem approximation of exact solution"<<endl;
+cout<<UEX<<endl;
+auto ifty=m.normInf(UEX,U);
+//auto H1=m.H1seminorm(UEX,U,m.GlobalStiffness());
+cout<<"Infinity norm "<<ifty<<endl;
+//cout<<"H1 seminorm "<<H1<<endl;
 
 
 /*

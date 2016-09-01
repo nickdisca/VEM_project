@@ -112,6 +112,8 @@ public:
 	MatrixType ComputeC(unsigned int k);
 	MatrixType LoadTerm(unsigned int k,std::function<double (double,double)> f);
 
+	MatrixType LocalConvert(unsigned int k, std::function<double (double,double)> uex);
+
 	//output
 	friend std::ostream & operator << (std::ostream &, const Polygon &);
 

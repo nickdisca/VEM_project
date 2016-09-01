@@ -89,6 +89,11 @@ public:
 
 	std::vector<unsigned int> Dirichlet();
 	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g);
+
+	//calcolo delle norme: da cambiare tutto con references
+	MatrixType VEMConvert(std::function<double (double,double)> uex);
+	double normInf(MatrixType uex,MatrixType u);
+	double H1seminorm(MatrixType uex, MatrixType u, MatrixType K);
 	//! output
 	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:
