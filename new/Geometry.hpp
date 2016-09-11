@@ -111,6 +111,7 @@ public:
 	MatrixType ComputeH(unsigned int k);
 	MatrixType ComputeC(unsigned int k);
 	MatrixType LoadTerm(unsigned int k,std::function<double (double,double)> f);
+	MatrixType LocalMass(unsigned int k);
 
 	MatrixType LocalConvert(unsigned int k, std::function<double (double,double)> uex);
 

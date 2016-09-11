@@ -208,6 +208,38 @@ MatrixType Mesh::GlobalStiffness(){
 
 
 
+MatrixType Mesh::GlobalMass(){
+	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
+
+	//dimensione: dof interni + numero vertici + boundary + dof interni
+	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
+	MatrixType M(dim,dim); M.fill(0.0);
+	std::cout<<"Dimensions "<<dim<<std::endl;
+
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		MatrixType locM=M_elementList[i].LocalMass(k);
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		std::vector<unsigned int> line3;
+		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+		std::vector<unsigned int> current=line1;
+		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+
+		std::cout<<"Current dofs: ";
+		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+
+		//assemble global matrix
+		for (unsigned int a=0; a<locM.rows(); a++){
+			for (unsigned int b=0; b<locM.cols(); b++){
+				M(current[a],current[b])+=locM(a,b);
+			}
+		}
+		} //end for of polygons
+	return M;
+}
+
+
 
 MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
 	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
@@ -374,16 +406,37 @@ double Mesh::normInf(MatrixType uex,MatrixType u){
 	for (unsigned int i=0; i<maxindex; i++)
 		norm=std::max(norm,std::abs(diff(i,0)));
 	std::cout<<"Expected"<<norm<<std::endl;
+	/*
 	maxindex=diff.rows(); norm=0.0;
 	for (unsigned int i=0; i<maxindex; i++)
 		norm=std::max(norm,std::abs(diff(i,0)));
 	std::cout<<"wrong"<<norm<<std::endl;
+	*/
 	return norm;
 }
 
 double Mesh::H1seminorm(MatrixType uex, MatrixType u, MatrixType K){
 	MatrixType temp=((u-uex).transpose())*K*(u-uex);
-	return temp(0,0);
+	return std::sqrt(temp(0,0));
+}
+
+
+void Mesh::Allnorms(MatrixType uex, MatrixType u){
+	MatrixType K=GlobalStiffness(), M=GlobalMass();
+
+	std::cout<<"Numerical solution: "<<std::endl<<uex<<std::endl;
+	std::cout<<"VEM approximation of exact solution: "<<std::endl<<u<<std::endl;
+
+	std::cout<<"Infinity norm: "<<normInf(uex,u)<<std::endl;
+
+	MatrixType tmp=((u-uex).transpose())*K*(u-uex);
+	std::cout<<"H1 seminorm: "<<std::sqrt(tmp(0,0))<<std::endl;
+
+	MatrixType temp=((u-uex).transpose())*M*(u-uex);
+	std::cout<<"L2 norm: "<<std::sqrt(temp(0,0))<<std::endl;
+	//std::cout<<tmp(0,0)<<" "<<temp(0,0)<<std::endl;
+	std::cout<<"H1 norm: "<<std::sqrt(tmp(0,0)+temp(0,0))<<std::endl;
+	return;
 }
 
 /*

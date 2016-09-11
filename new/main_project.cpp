@@ -11,7 +11,7 @@ int main()
 {
 
 
-std::string str="squares.dat";
+std::string str="single.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;
@@ -46,10 +46,7 @@ cout<<"Solution"<<U<<endl;
 MatrixType UEX=m.VEMConvert(uex);
 cout<<"Vem approximation of exact solution"<<endl;
 cout<<UEX<<endl;
-auto ifty=m.normInf(UEX,U);
-//auto H1=m.H1seminorm(UEX,U,m.GlobalStiffness());
-cout<<"Infinity norm "<<ifty<<endl;
-//cout<<"H1 seminorm "<<H1<<endl;
+m.Allnorms(U,UEX);
 
 
 /*

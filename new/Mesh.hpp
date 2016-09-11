@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <math.h>
 #include "Geometry.hpp"
 
 class Mesh; //pura dichiarazione, la definisco dopo
@@ -85,6 +86,7 @@ public:
 	//bool checkmesh()const;
 	//!Assemble global stiffness
 	MatrixType GlobalStiffness();
+	MatrixType GlobalMass();
 	MatrixType GlobalLoad(std::function<double(double,double)> f);
 
 	std::vector<unsigned int> Dirichlet();
@@ -94,6 +96,7 @@ public:
 	MatrixType VEMConvert(std::function<double (double,double)> uex);
 	double normInf(MatrixType uex,MatrixType u);
 	double H1seminorm(MatrixType uex, MatrixType u, MatrixType K);
+	void Allnorms(MatrixType uex, MatrixType u);
 	//! output
 	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:

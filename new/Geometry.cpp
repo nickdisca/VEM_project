@@ -484,6 +484,15 @@ MatrixType Polygon::LocalConvert(unsigned int k, std::function<double (double,do
 
 }
 
+
+MatrixType Polygon::LocalMass(unsigned int k){
+	MatrixType C=ComputeC(k), H=ComputeH(k), D=ComputeD(k);
+	MatrixType Pi0=D*(H.lu()).solve(C);
+	MatrixType I; I.setIdentity(Pi0.rows(),Pi0.cols());
+
+	return C.transpose()*(H.lu()).solve(C)+area()*(I-Pi0).transpose()*(I-Pi0);
+}
+
 /*
 MatrixType AbstractPolygon::LoadTerm(int k){
 	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant=1
