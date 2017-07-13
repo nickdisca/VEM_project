@@ -154,7 +154,6 @@ void Mesh::boundaryDOF(){
 		computeDOF(points,k,weights,nodes);
 		std::vector<unsigned int> line;
 		for (unsigned int j=0; j<nodes.size(); j++) {
-
 			//insert if is not in the vector
 			auto index=std::find(M_edgesDOF.begin(),M_edgesDOF.end(),nodes[j]);
 			if (index==M_edgesDOF.end())
@@ -177,7 +176,6 @@ void Mesh::boundaryDOF(){
 
 MatrixType Mesh::GlobalStiffness(){
 	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
-
 	//dimensione: dof interni + numero vertici + boundary + dof interni
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
 	MatrixType K(dim,dim); K.fill(0.0);
@@ -251,7 +249,7 @@ MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
 		MatrixType locF=M_elementList[i].LoadTerm(k,f);
-		std::cout<<locF;
+		//std::cout<<locF;
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		std::vector<unsigned int> line3;
@@ -286,33 +284,37 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 	int ii=-1, jj=0,jjj=0;
 
 	for (unsigned int i=0; i<K.rows(); i++){
-		std::cout<<i<<std::endl;
+		//std::cout<<i<<std::endl;
 		jj=0; jjj=0;
 		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
 		ii++; //se la i non è di Dirichlet aumenta di 1
 		for (unsigned int j=0; j<K.cols(); j++){
 			if (find(Dir.begin(),Dir.end(),j)==Dir.end()) //se anche j non è di Dirichlet inserisci in KII
-				{KII(ii,jj)=K(i,j); std::cout<<"internal"<<ii<<"  "<<jj<<std::endl; jj++;}
-			else {KIB(ii,jjj)=K(i,j); std::cout<<"boundary"<<ii<<"  "<<jjj<<std::endl; jjj++;}
+				{KII(ii,jj)=K(i,j); //std::cout<<"internal"<<ii<<"  "<<jj<<std::endl; 
+				jj++;
+				}
+			else {KIB(ii,jjj)=K(i,j); //std::cout<<"boundary"<<ii<<"  "<<jjj<<std::endl; 
+				jjj++;
+					}
 		}
 		}
 	} //fine for
-	std::cout<<KII<<std::endl;
-	std::cout<<KIB<<std::endl;
 
 	//termine noto
 	ii=0;
+
+	std::cout<<"Rows "<<F.rows();
 	for (unsigned int i=0; i<F.rows(); i++){
-		std::cout<<i<<std::endl;
+		//std::cout<<"hey"<<i<<std::endl;
 		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {FI(ii,0)=F(i,0); ii++;}
 	}
-	std::cout<<FI<<std::endl;
+	//std::cout<<FI<<std::endl;
 
 	//real solution
 	MatrixType U(K.rows(),1), UB(Dir.size(),1);
 	ii=0;
 	for (unsigned int i=0; i<U.rows(); i++){
-		std::cout<<i<<std::endl;
+		//std::cout<<i<<std::endl;
 		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
 			Point PP;
 			if(i<M_pointList.size()) PP=M_pointList[i];
@@ -320,7 +322,7 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 			UB(ii,0)=g(PP[0],PP[1]); 
 			ii++;}
 	}
-	std::cout<<UB<<std::endl;
+	//std::cout<<UB<<std::endl;
 
 	//solve
 	MatrixType UI(U.rows()-UB.rows(),1);
@@ -405,7 +407,7 @@ double Mesh::normInf(MatrixType uex,MatrixType u){
 	double norm=0.0;
 	for (unsigned int i=0; i<maxindex; i++)
 		norm=std::max(norm,std::abs(diff(i,0)));
-	std::cout<<"Expected"<<norm<<std::endl;
+	//std::cout<<"Expected "<<norm<<std::endl;
 	/*
 	maxindex=diff.rows(); norm=0.0;
 	for (unsigned int i=0; i<maxindex; i++)
@@ -421,11 +423,11 @@ double Mesh::H1seminorm(MatrixType uex, MatrixType u, MatrixType K){
 }
 
 
-void Mesh::Allnorms(MatrixType uex, MatrixType u){
+void Mesh::Allnorms(MatrixType u, MatrixType uex){
 	MatrixType K=GlobalStiffness(), M=GlobalMass();
 
-	std::cout<<"Numerical solution: "<<std::endl<<uex<<std::endl;
-	std::cout<<"VEM approximation of exact solution: "<<std::endl<<u<<std::endl;
+	std::cout<<"Exact solution (converted VEM): "<<std::endl<<uex<<std::endl;
+	std::cout<<"VEM approximation of exact solution (numerical): "<<std::endl<<u<<std::endl;
 
 	std::cout<<"Infinity norm: "<<normInf(uex,u)<<std::endl;
 

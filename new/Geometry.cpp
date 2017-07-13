@@ -175,11 +175,11 @@ MatrixType Polygon::ComputeB(unsigned int k){
 	//ho bisogno di sapere i pesi associati (da migliorare assolutamente)
 	std::vector<Point> dummy;
 	std::vector<double> weights;
-	std::cout<<"Here"<<std::endl;
+	std::cout<<"Here "<<k<<std::endl;
 	computeDOF(P,k,weights,dummy);
 	//for (auto i : weights) std::cout<<i<<std::endl;
 
-
+	std::cout<<"Here"<<std::endl;
 	unsigned int aux=0;
 	for (unsigned int j=0; j<vertexes.size()+dof.size(); j++) {
 		//da controllare posizione di aux
@@ -416,12 +416,13 @@ MatrixType Polygon::ComputeC(unsigned int k){
 	double A(area()); std::cout<<"Area "<<A<<std::endl;
 	std::cout<<"here";
 
+	MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
 	for (unsigned int alpha=0; alpha<C.rows(); alpha++){
 		for (unsigned int j=0; j<C.cols(); j++){
 			int jj=j-vertexes.size()-dof.size();
 			if(alpha<k*(k-1)/2) 
 				{ if (jj==alpha) C(alpha,j)=A; else C(alpha,j)=0.0;}
-			else {MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
+			else {//MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
 				C(alpha,j)=M(alpha,j);}
 		}
 

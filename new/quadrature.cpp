@@ -47,6 +47,7 @@ void Gauss_Leg(double a, double b, unsigned int n, std::vector<double> & nodes,s
 //quelli 1D vanno bene solo sui cateti, ma potrebbero non essere necessari
 void reference(unsigned int n,
 	std::vector<double> & nodes1d, std::vector<double> & weights1d, std::vector<Point> & nodes2d, std::vector<double> & weights2d){
+	
 Gauss_Leg(0.0,1.0,n,nodes1d,weights1d);
 
 std::vector<double> x,w;

@@ -20,7 +20,7 @@ void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<dou
 	nodes.clear(); weights.clear();
 	if (k==1) {W.push_back(1.0); W.push_back(1.0);}
 	if (k==2) {N.push_back(0.0); W.push_back(1.0/3.0); W.push_back(4.0/3.0); W.push_back(1.0/3.0);}
-	if (k>=3) std::cout<<"Error";
+	if (k>=3) {std::cout<<"Error"; return;}
 
 	//ciclo su tutti i lati
 	for (unsigned int i=0; i<points.size(); ++i){
@@ -38,7 +38,7 @@ void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<dou
 	}
 	//weights.push_back(length/2*W[W.size()-1]); non posso metterlo in fondo!!!
 	
-	for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
-	for (auto i : weights) std::cout<<"weights on edges "<<i<<std::endl;
+	//for (auto i : nodes) std::cout<<"Dof on edges "<<i<<std::endl;
+	//for (auto i : weights) std::cout<<"weights on edges "<<i<<std::endl;
 	return;
 }
