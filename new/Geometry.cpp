@@ -35,7 +35,7 @@ std::ostream & operator << (std::ostream & ost, const Polygon & p){
 	ost<<"with the following dofs: "<<std::endl;
 	if (p.dof.size()==0) std::cout<<"Boundary dofs not set"<<std::endl;
 	else
-	for (unsigned int i=0; i<p.size(); ++i) 
+	for (unsigned int i=0; i<p.dof.size(); ++i) 
 		ost<<"Index "<<" = "<<p.dof[i]<<" corresponding to point "<<p.pointer_dof->operator[](p.dof[i]);
 return ost;
 };
@@ -185,8 +185,8 @@ MatrixType Polygon::ComputeB(unsigned int k){
 		//da controllare posizione di aux
 		int jj=(j-vertexes.size());
 		if (j>=vertexes.size()){
-		if (aux!=0 && aux%(k-1)==0) aux=aux+2;
-		aux++;
+			if (aux!=0 && aux%(k-1)==0) aux=aux+2;
+			aux++;
 		}
 
 		for (unsigned int i=1; i<B.rows(); i++){
@@ -199,7 +199,7 @@ MatrixType Polygon::ComputeB(unsigned int k){
 {return actualdegree[1]/diam*pow((xx-C[0])/diam,actualdegree[0])*pow((yy-C[1])/diam,std::max(actualdegree[1]-1,0));};
 			
 
-			std::cout<<i<<j<<std::endl;
+			//std::cout<<i<<j<<std::endl;
 			//contributi dovuti alle funzioni di base relative ai vertici
 			if (j<vertexes.size()){
 				B(i,j)=(Normal(j+1)[0]*fx(P[j][0],P[j][1])+Normal(j+1)[1]*fy(P[j][0],P[j][1]))*weights[j*(k+1)];
@@ -222,12 +222,12 @@ MatrixType Polygon::ComputeB(unsigned int k){
 		}
 	}
 
-//ultime colonne
+//ultime colonne: forse da modificare per k>=3 ma sembra ok
 for (unsigned int j=vertexes.size()+dof.size(); j<B.cols(); j++){
 	for (unsigned int i=1; i<B.rows(); i++){
 		std::array<int,2> actualdegree=degree[i];
 		unsigned int jj=j-vertexes.size()-dof.size();
-		std::cout<<i<<j<<std::endl;
+		//std::cout<<i<<j<<std::endl;
 		if (actualdegree[0]<=1 && actualdegree[1]<=1) B(i,j)=0.0;
 		else {
 		double coeff1=actualdegree[0]*(actualdegree[0]-1)/(diam*diam);
@@ -295,7 +295,7 @@ MatrixType Polygon::ComputeG(unsigned int k){
 {return actualdegreeI[1]/diam*pow((xx-C[0])/diam,actualdegreeI[0])*pow((yy-C[1])/diam,std::max(actualdegreeI[1]-1,0));};
 			
 
-			std::cout<<i<<j<<std::endl;
+			//std::cout<<i<<j<<std::endl;
 
 			for (unsigned int z=0; z<this->size(); z++) {
 				//vertice iniziale di ogni lato
@@ -414,14 +414,15 @@ MatrixType Polygon::ComputeC(unsigned int k){
 	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
 	Point centr(centroid()); std::cout<<"Centroid "<<centr;
 	double A(area()); std::cout<<"Area "<<A<<std::endl;
-	std::cout<<"here";
 
 	MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
 	for (unsigned int alpha=0; alpha<C.rows(); alpha++){
 		for (unsigned int j=0; j<C.cols(); j++){
 			int jj=j-vertexes.size()-dof.size();
 			if(alpha<k*(k-1)/2) 
-				{ if (jj==alpha) C(alpha,j)=A; else C(alpha,j)=0.0;}
+				{ 
+					if (jj==alpha) C(alpha,j)=A; else C(alpha,j)=0.0;
+				}
 			else {//MatrixType M=ComputeH(k)*((ComputeG(k).lu()).solve(ComputeB(k)));
 				C(alpha,j)=M(alpha,j);}
 		}
@@ -476,7 +477,7 @@ MatrixType Polygon::LocalConvert(unsigned int k, std::function<double (double,do
 			auto fun= [actualdegree,C,diam,uex](double x,double y) {
 			return uex(x,y)*pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,actualdegree[1]);};
 
-			U(i,0)=1.0/A*Q.global_int(uex,k);
+			U(i,0)=1.0/A*Q.global_int(fun,k);
 
 			}
 

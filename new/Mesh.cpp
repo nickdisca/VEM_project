@@ -197,6 +197,7 @@ MatrixType Mesh::GlobalStiffness(){
 		//assemble global matrix
 		for (unsigned int a=0; a<locK.rows(); a++){
 			for (unsigned int b=0; b<locK.cols(); b++){
+				//std::cout<<"Inserisco elemento "<<a<<" "<<b<<" in posizione "<<current[a]<<" "<<current[b]<<std::endl;
 				K(current[a],current[b])+=locK(a,b);
 			}
 		}
@@ -336,6 +337,7 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 		else {U(i,0)=UI(iii,0); iii++;}
 	}
 	std::cout<<"Solution:"<<std::endl<<U<<std::endl;
+	//std::cout<<"MATRICE"<<KIB;
 
 	//print solution
 	std::ofstream file("output.dat");
@@ -357,7 +359,7 @@ std::vector<unsigned int> Mesh::Dirichlet(){
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		for (unsigned int j=0; j<line1.size(); j++){
-			//se entrambi gli estremi sono di bordo, allora il dof è di bordo
+			//se entrambi gli estremi sono di bordo, allora il dof è di bordo (NON è VERO!)
 			if (find(M_boundary.begin(), M_boundary.end(),line1[j])!=M_boundary.end() &&
 				find(M_boundary.begin(), M_boundary.end(),line1[(j+1)%line1.size()])!=M_boundary.end())
 				{for (unsigned int z=0; z<k-1; z++) Dir.push_back(line2[j*(k-1)+z]+M_pointList.size());} 
