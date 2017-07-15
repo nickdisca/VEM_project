@@ -12,7 +12,7 @@ int main()
 {
 
 
-std::string str="Meshes/4.dat";
+std::string str="Meshes/16.dat";
 MeshReader read(false);
 Mesh m(str,read,3);
 //cout<<m;
@@ -62,18 +62,23 @@ line.push_back(4); line.push_back(5); line.push_back(6); line.push_back(7);
 p.setDof(line,&dof);
 cout<<p;
 MatrixType B=p.ComputeB(3), D=p.ComputeD(3), G=p.ComputeG(3);
-cout<<"Matrix B:"<<endl<<B<<endl;
-cout<<"Matrix D:"<<endl<<D<<endl;
-//MatrixType B=p.ComputeB(3); MatrixType D=p.ComputeD(3); MatrixType M=B*D;
-cout<<"Matrix G:"<<endl<<G<<endl;
-//cout<<"Matrix product:"<<endl<<B*D<<endl;
-//cout<<"Matrix product:"<<endl<<MM<<endl;
-cout<<"Matrix K (local stiffness):"<<endl<<p.LocalStiffness(3)<<endl;
-//B=p.ComputeB(3); D=p.ComputeD(3); G=p.ComputeG(3);
 //cout<<"Matrix B:"<<endl<<p.ComputeB(3)<<endl;
 //cout<<"Matrix D:"<<endl<<p.ComputeD(3)<<endl;
 //MatrixType B=p.ComputeB(3); MatrixType D=p.ComputeD(3); MatrixType M=B*D;
-//cout<<"Matrix G:"<<endl<<p.ComputeG(3)<<endl;
+//cout<<"Matrix product:"<<endl<<B*D<<endl;
+//cout<<"Matrix product:"<<endl<<MM<<endl;
+cout<<"Matrix K (local stiffness):"<<endl<<p.LocalStiffness(3)<<endl;
+cout<<"Matrix K (local stiffness):"<<endl<<p.LocalStiffness(3)<<endl;
+///B=p.ComputeB(3); D=p.ComputeD(3); G=p.ComputeG(3);
+//cout<<"Matrix B:"<<endl<<p.ComputeB(3)<<endl;
+//cout<<"Matrix D:"<<endl<<p.ComputeD(3)<<endl;
+//B=p.ComputeB(3); D=p.ComputeD(3); MatrixType GG=p.ComputeB(3)*p.ComputeD(3);
+cout<<"Matrix B:"<<endl<<p.ComputeB(3)<<endl;
+cout<<"Matrix D:"<<endl<<p.ComputeD(3)<<endl;;
+B=p.ComputeB(3); D=p.ComputeD(3);
+cout<<"Matrix B:"<<endl<<B<<endl;
+cout<<"Matrix D:"<<endl<<D<<endl;
+cout<<"Matrix G:"<<endl<<B*D<<endl;
 
 //cout<<"Matrix H:"<<endl<<p.ComputeH(3)<<endl;
 //cout<<"Matrix C:"<<endl<<p.ComputeC(3)<<endl;
@@ -90,9 +95,9 @@ cout<<"Matrix K (local stiffness):"<<endl<<p.LocalStiffness(3)<<endl;
 //auto g=[pi](double x,double y){return (1.0-x)*y*std::sin(pi*x);};
 
 //exact solution: 1
-auto f=[](double x,double y){return 0.0;};
-auto g=[](double x,double y){return 1.0;};
-auto uex=[](double x,double y){return 1.0;};
+//auto f=[](double x,double y){return 0.0;};
+//auto g=[](double x,double y){return 1.0;};
+//auto uex=[](double x,double y){return 1.0;};
 
 //exact solution: x^2+y^2
 //auto f=[](double x,double y){return -4.0;};
@@ -100,9 +105,9 @@ auto uex=[](double x,double y){return 1.0;};
 //auto uex=[](double x,double y){return x*x+y*y;};
 
 //exact solution: sin(x)*sin(y)
-//auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
-//auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
-//auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
+auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
 
 //MatrixType F=m.GlobalLoad(f);
 //cout<<F<<endl;

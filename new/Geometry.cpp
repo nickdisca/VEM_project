@@ -227,13 +227,16 @@ for (unsigned int j=vertexes.size()+dof.size(); j<B.cols(); j++){
 	for (unsigned int i=1; i<B.rows(); i++){
 		std::array<int,2> actualdegree=degree[i];
 		unsigned int jj=j-vertexes.size()-dof.size();
+		//std::cout<<"Polynomial"<<actualdegree[0]<<actualdegree[1]<<" "<<i<<" "<<jj<<std::endl;
 		//std::cout<<i<<j<<std::endl;
 		if (actualdegree[0]<=1 && actualdegree[1]<=1) B(i,j)=0.0;
 		else {
 		double coeff1=actualdegree[0]*(actualdegree[0]-1)/(diam*diam);
 		double coeff2=actualdegree[1]*(actualdegree[1]-1)/(diam*diam);
-		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) B(i,j)=-coeff1*A;
-		if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) B(i,j)=-coeff2*A;
+		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) {B(i,j)=-coeff1*A; std::cout<<"Inserisco"<<std::endl;}
+		else {if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) {B(i,j)=-coeff2*A; std::cout<<"Inserisco2"<<std::endl;}
+			else B(i,j)=0.0;
+			}
 		}
 	}
 }
