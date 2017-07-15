@@ -108,7 +108,8 @@ MatrixType Polygon::ComputeD(unsigned int k) {
 	
 	//dimensions: Ndof x nk dove Ndof=dimVk=nvert+nvert*(k-1)+n_(k-2)
 	MatrixType D(vertexes.size()*k+k*(k-1)/2,(k+2)*(k+1)/2);
-	std::cout<<"Created matrix D with size "<<D.rows()<<" x "<<D.cols()<<std::endl;
+	std::cout<<"Created matrix D with size "<<D.rows()<<" x "<<D.cols()<<std::endl; 
+	D.fill(0.0);
 
 	std::vector<Point> P=getPoints();
 	//for (auto i: P) std::cout<<i;
@@ -162,7 +163,8 @@ MatrixType Polygon::ComputeB(unsigned int k){
 
 	//dimensions: nk x Ndof
 	MatrixType B((k+2)*(k+1)/2,vertexes.size()*k+k*(k-1)/2);
-	std::cout<<"Created matrix B with size "<<B.rows()<<" x "<<B.cols()<<std::endl;
+	std::cout<<"Created matrix B with size "<<B.rows()<<" x "<<B.cols()<<std::endl; 
+	B.fill(0.0);
 	std::vector<Point> P=getPoints();
 	//for (auto i: P) std::cout<<i;
 	std::vector<Point> BD=getDof();
@@ -180,12 +182,13 @@ MatrixType Polygon::ComputeB(unsigned int k){
 	//for (auto i : weights) std::cout<<i<<std::endl;
 
 	std::cout<<"Here"<<std::endl;
-	unsigned int aux=0;
+	int aux=0;
 	for (unsigned int j=0; j<vertexes.size()+dof.size(); j++) {
 		//da controllare posizione di aux
 		int jj=(j-vertexes.size());
 		if (j>=vertexes.size()){
-			if (aux!=0 && aux%(k-1)==0) aux=aux+2;
+			//if (aux!=0 && aux%(k-1)==0) aux=aux+2;
+			if (aux!=0 && (aux+2)%(k+1)==0) aux=aux+2;
 			aux++;
 		}
 
@@ -213,7 +216,7 @@ MatrixType Polygon::ComputeB(unsigned int k){
 
 			//contributi dovuti alle funzioni di base relative ai dof sul bordo
 			else {
-				//std::cout<<"Taking position number "<<aux<<std::endl;
+				//std::cout<<"Taking position number "<<aux<<" "<<weights[aux]<<std::endl;
 				B(i,j)=(Normal(jj/(k-1)+1)[0]*fx(BD[jj][0],BD[jj][1])+
 					Normal(jj/(k-1)+1)[1]*fy(BD[jj][0],BD[jj][1]))*weights[aux];
 			}
@@ -229,13 +232,13 @@ for (unsigned int j=vertexes.size()+dof.size(); j<B.cols(); j++){
 		unsigned int jj=j-vertexes.size()-dof.size();
 		//std::cout<<"Polynomial"<<actualdegree[0]<<actualdegree[1]<<" "<<i<<" "<<jj<<std::endl;
 		//std::cout<<i<<j<<std::endl;
-		if (actualdegree[0]<=1 && actualdegree[1]<=1) B(i,j)=0.0;
+		if (actualdegree[0]<=1 && actualdegree[1]<=1) ;//B(i,j)=0.0;
 		else {
 		double coeff1=actualdegree[0]*(actualdegree[0]-1)/(diam*diam);
 		double coeff2=actualdegree[1]*(actualdegree[1]-1)/(diam*diam);
-		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) {B(i,j)=-coeff1*A; std::cout<<"Inserisco"<<std::endl;}
-		else {if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) {B(i,j)=-coeff2*A; std::cout<<"Inserisco2"<<std::endl;}
-			else B(i,j)=0.0;
+		if (actualdegree[0]-2==degree[jj][0] && actualdegree[1]==degree[jj][1]) {B(i,j)+=-coeff1*A; std::cout<<"Inserisco "<<coeff1*A<<std::endl;}
+		else {if (actualdegree[1]-2==degree[jj][1] && actualdegree[0]==degree[jj][0]) {B(i,j)+=-coeff2*A; std::cout<<"Inserisco2"<<coeff2*A<<std::endl;}
+			else ;//B(i,j)=0.0;
 			}
 		}
 	}
@@ -250,7 +253,7 @@ else {
 	B(0,j)=(j<vertexes.size()+dof.size() ? 1.0/vertexes.size() : 0.0);
 }
 
-
+//std::cout<<B;
 return B;
 }
 
@@ -262,7 +265,7 @@ MatrixType Polygon::ComputeG(unsigned int k){
 
 	//dimensions: nk x nk
 	MatrixType G((k+2)*(k+1)/2,(k+2)*(k+1)/2);
-	std::cout<<"Created matrix G with size "<<G.rows()<<" x "<<G.cols()<<std::endl;
+	std::cout<<"Created matrix G with size "<<G.rows()<<" x "<<G.cols()<<std::endl; G.fill(0.0);
 	G.fill(0.0); //to be sure that it is initialized
 	std::vector<Point> P=getPoints();
 	//for (auto i: P) std::cout<<i;
@@ -370,10 +373,12 @@ return G;
 
 MatrixType Polygon::LocalStiffness(unsigned int k){
 	MatrixType B=ComputeB(k), D=ComputeD(k);
-	MatrixType G=B*D; //ComputeG(k);
+	MatrixType G=ComputeG(k);//B*D; //ComputeG(k);
 	MatrixType Pistar=(G.lu()).solve(B);
 	MatrixType Pi=D*Pistar;
 	MatrixType I; I.setIdentity(Pi.rows(),Pi.cols());
+
+	//std::cout<<B<<std::endl<<std::endl<<D<<std::endl<<std::endl<<G;
 
 	//G non mi serve più, posso rinominarla come Gtilda
 	//nota: topRows usa notazione alla matlab

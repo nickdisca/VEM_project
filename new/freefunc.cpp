@@ -22,7 +22,9 @@ void computeDOF(std::vector<Point> const & points,unsigned int k,std::vector<dou
 	if (k==2) {N.push_back(0.0); W.push_back(1.0/3.0); W.push_back(4.0/3.0); W.push_back(1.0/3.0);}
 	if (k==3) {N.push_back(-1.0/std::sqrt(5.0)); N.push_back(1.0/std::sqrt(5.0)); 
 		W.push_back(1.0/6.0); W.push_back(5.0/6.0); W.push_back(5.0/6.0); W.push_back(1.0/6.0);}
-	if (k>=4) {std::cout<<"Error"<<std::endl; return;}
+	if (k==4) {N.push_back(-std::sqrt(3.0/7.0)); N.push_back(0.0); N.push_back(std::sqrt(3.0/7.0)); 
+		W.push_back(1.0/10.0); W.push_back(49.0/90.0); W.push_back(32.0/45.0); W.push_back(49.0/90.0); W.push_back(1.0/10.0);}
+	if (k>=5) {std::cout<<"Error"<<std::endl; return;}
 
 	//ciclo su tutti i lati
 	for (unsigned int i=0; i<points.size(); ++i){

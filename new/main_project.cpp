@@ -14,7 +14,7 @@ int main()
 
 std::string str="Meshes/16.dat";
 MeshReader read(false);
-Mesh m(str,read,3);
+Mesh m(str,read,4);
 //cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
 //m.boundaryDOF();
