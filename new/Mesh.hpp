@@ -80,6 +80,7 @@ public:
 	int readMesh(std::string const & file, MeshReader &, unsigned int kk);
 	//! measure of the domain
 	double area()const;
+	double max_diam()const;
 	//! Compute the connectivity matrix for the dof on edges
 	void boundaryDOF();
 	//! Test mesh consistency

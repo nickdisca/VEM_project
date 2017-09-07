@@ -140,6 +140,12 @@ double Mesh::area()const {
 	return meas;
 }
 
+double Mesh::max_diam()const {
+	double d(0);
+	for (auto i : M_elementList) d=std::max(i.diameter(),d);
+	return d;
+}
+
 
 
 

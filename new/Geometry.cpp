@@ -32,6 +32,7 @@ std::ostream & operator << (std::ostream & ost, const Polygon & p){
 	ost<<"The polygon is the following: "<<std::endl;
 	for (unsigned int i=0; i<p.size(); ++i) 
 		ost<<"Index "<<" = "<<p.vertexes[i]<<" corresponding to point "<<p.pointer->operator[](p.vertexes[i]);
+	ost<<"with area equal to: "<<p.area()<<std::endl<<"and centroid position: "<<p.centroid()<<std::endl;
 	ost<<"with the following dofs: "<<std::endl;
 	if (p.dof.size()==0) std::cout<<"Boundary dofs not set"<<std::endl;
 	else
@@ -50,7 +51,7 @@ double Polygon::area() const{
 	for (decltype(size) i=0; i<size;++i){
 		Point const & p1(ver[i]);
 		Point const & p2(ver[(i+1) % size]);
-		Point const & p0(ver[(i-1) % size]);
+		Point const & p0(ver[(i-1+size) % size]);
 		result+=p1[0]*(p2[1]-p0[1]);
 	}
 	return 0.5*result;

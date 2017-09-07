@@ -12,11 +12,12 @@ int main()
 {
 
 
-std::string str="Meshes/16.dat";
+std::string str="Meshes/Non_uniform/1024.dat";
 MeshReader read(false);
-Mesh m(str,read,4);
-//cout<<m;
+Mesh m(str,read,1);
+cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
+cout<<"Maximum diameter = "<<m.max_diam()<<endl;
 //m.boundaryDOF();
 //cout<<m;
 //MatrixType K=m.GlobalStiffness();
