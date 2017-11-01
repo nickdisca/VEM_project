@@ -12,9 +12,9 @@ int main()
 {
 
 
-std::string str="Meshes/Non_uniform/1024.dat";
+std::string str="Meshes/Non_uniform/128.dat";
 MeshReader read(false);
-Mesh m(str,read,1);
+Mesh m(str,read,2);
 cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
 cout<<"Maximum diameter = "<<m.max_diam()<<endl;
@@ -106,9 +106,20 @@ cout<<"Matrix G:"<<endl<<B*D<<endl;
 //auto uex=[](double x,double y){return x*x+y*y;};
 
 //exact solution: sin(x)*sin(y)
-auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
-auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
-auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
+//auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+
+//exact solution: x^2*abs(x) centered in x=1/2
+auto f=[](double x,double y){return -6.0*std::abs(x-1./2);};
+auto g=[](double x,double y){return (x-1./2)*(x-1./2)*std::abs(x-1./2);};
+auto uex=[](double x,double y){return (x-1./2)*(x-1./2)*std::abs(x-1./2);};
+
+//exact solution: x*abs(x) centered in x=1/2
+//auto f=[](double x,double y){return -2.0*((x>1./2)?1.0:(x < 1./2)?-1.0:0.);};
+//auto g=[](double x,double y){return (x-1./2)*std::abs(x-1./2);};
+//auto uex=[](double x,double y){return (x-1./2)*std::abs(x-1./2);};
+
 
 //MatrixType F=m.GlobalLoad(f);
 //cout<<F<<endl;
