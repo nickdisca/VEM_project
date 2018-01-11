@@ -180,7 +180,7 @@ void Mesh::boundaryDOF(){
 
 
 
-MatrixType Mesh::GlobalStiffness(){
+MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu){
 	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
 	//dimensione: dof interni + numero vertici + boundary + dof interni
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
@@ -188,7 +188,7 @@ MatrixType Mesh::GlobalStiffness(){
 	std::cout<<"Dimensions "<<dim<<std::endl;
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
-		MatrixType locK=M_elementList[i].LocalStiffness(k);
+		MatrixType locK=M_elementList[i].LocalStiffness_weighted(k,mu,mu_bar,constant_mu);
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		std::vector<unsigned int> line3;
@@ -279,8 +279,10 @@ MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
 
 
 
-MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<double (double,double)> g){
-	MatrixType K=GlobalStiffness();
+MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<double (double,double)> g,
+	std::function<double (double,double)> mu, double mu_bar, bool constant_mu){
+		
+	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu);
 	MatrixType F=GlobalLoad(f);
 	std::vector<unsigned int> Dir=Dirichlet();
 	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());
@@ -432,7 +434,8 @@ double Mesh::H1seminorm(MatrixType uex, MatrixType u, MatrixType K){
 
 
 void Mesh::Allnorms(MatrixType u, MatrixType uex){
-	MatrixType K=GlobalStiffness(), M=GlobalMass();
+	MatrixType K=GlobalStiffness([](double x, double y) {return 1.0;},1.0,true);
+	MatrixType M=GlobalMass();
 
 	std::cout<<"Exact solution (converted VEM): "<<std::endl<<uex<<std::endl;
 	std::cout<<"VEM approximation of exact solution (numerical): "<<std::endl<<u<<std::endl;

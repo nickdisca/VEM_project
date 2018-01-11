@@ -388,8 +388,35 @@ MatrixType Polygon::LocalStiffness(unsigned int k){
 	return Pistar.transpose()*G*Pistar+(I-Pi).transpose()*(I-Pi);
 }
 
+MatrixType Polygon::LocalStiffness_weighted(unsigned int k, std::function<double (double,double)> mu, double mu_bar, bool constant_mu){
 
-MatrixType Polygon::ComputeH(unsigned int k){
+	//if the viscosity is constant, use standard algorithm
+	if (constant_mu) {
+		std::cout<<"Computing constant stiffness matrix"<<std::endl;
+		return mu(0,0)*LocalStiffness(k);
+	}
+
+	std::cout<<"Computing weighted stiffness matrix"<<std::endl;
+	
+	MatrixType B=ComputeB(k), D=ComputeD(k);
+	MatrixType G=ComputeG(k);
+	MatrixType Pi=D*(G.lu()).solve(B);
+	MatrixType I; I.setIdentity(Pi.rows(),Pi.cols());
+	MatrixType H=ComputeH(k-1,[](double x, double y){return 1.0;});
+	MatrixType H_weight=ComputeH(k-1,mu);
+	MatrixType Ex=ComputeE(k,0);
+	MatrixType Ey=ComputeE(k,1);
+	
+	MatrixType Pi0_starx=(H.lu()).solve(Ex);
+	MatrixType Pi0_stary=(H.lu()).solve(Ey);
+	
+	return Pi0_starx.transpose()*H_weight*Pi0_starx+Pi0_stary.transpose()*H_weight*Pi0_stary+mu_bar*(I-Pi).transpose()*(I-Pi);
+
+}
+
+
+
+MatrixType Polygon::ComputeH(unsigned int k,std::function<double (double,double)> weight=[](int x, int y){return 1.0;} ){
 	MatrixType H((k+1)*(k+2)/2,(k+1)*(k+2)/2);
 	std::cout<<"Created matrix H with size "<<H.rows()<<" x "<<H.cols()<<std::endl;
 	std::vector<std::array<int,2> > degree=Polynomials(k);
@@ -403,12 +430,13 @@ MatrixType Polygon::ComputeH(unsigned int k){
 			std::array<int,2> dgJ=degree[j];
 			Quadrature Q(*this);
 			//prodotto dei polinomi
-			auto poli=[C,diam,dgI,dgJ](double x,double y)
+			auto poli=[C,diam,dgI,dgJ,weight](double x,double y)
 			{double res=pow((x-C[0])/diam,dgI[0])*pow((y-C[1])/diam,dgI[1]);
 				res=res*pow((x-C[0])/diam,dgJ[0])*pow((y-C[1])/diam,dgJ[1]);
+				res=res*weight(x,y);
 				return res;};
 			//calcolo l'integrale
-			H(i,j)=Q.global_int(poli,k);
+			H(i,j)=Q.global_int(poli,k+2);
 		}
 
 	}
@@ -504,18 +532,85 @@ MatrixType Polygon::LocalMass(unsigned int k){
 	return C.transpose()*(H.lu()).solve(C)+area()*(I-Pi0).transpose()*(I-Pi0);
 }
 
-/*
-MatrixType AbstractPolygon::LoadTerm(int k){
-	MatrixType F(vertexes.size()*k+k*(k-1)/2,1); //suppose load term constant=1
-	vector<array<int,2> > degree=Polynomials(k);
-	MatrixType Pi0star=((ComputeH(k).lu()).solve(ComputeC(k)));
-	cout<<Pi0star<<endl;
-	for (unsigned int i=0; i<F.rows(); i++){
-		for (unsigned int alpha=0; alpha<(k+2)*(k+1)/2; alpha++){
-			F(i,0)+=Pi0star(alpha,i)*ComputeIntegral(k,degree[alpha][0],degree[alpha][1]);
-			//cout<<F(i,0)<<"  "<<i<<endl;
+
+
+MatrixType Polygon::ComputeE(unsigned int k, unsigned int VAR){
+
+	MatrixType E((k+1)*(k)/2,vertexes.size()*k+k*(k-1)/2);
+	std::string output=(VAR==0)?"x":"y";
+	std::cout<<"Computing matrix associated with derivative with respect to "<<output<<std::endl;
+	std::cout<<"Created matrix E with size "<<E.rows()<<" x "<<E.cols()<<std::endl; 
+	E.fill(0.0);
+	std::vector<Point> P=getPoints();
+	std::vector<Point> BD=getDof();
+	std::vector<std::array<int,2> > degree=Polynomials(k-1);
+	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
+	Point C(centroid()); std::cout<<"Centroid "<<C;
+	double A(area()); std::cout<<"Area "<<A<<std::endl;
+
+	std::vector<Point> dummy;
+	std::vector<double> weights;
+	computeDOF(P,k,weights,dummy);
+	
+	int aux=0;
+	for (unsigned int j=0; j<vertexes.size()+dof.size(); j++) {
+		//da controllare posizione di aux
+		int jj=(j-vertexes.size());
+		if (j>=vertexes.size()){
+			//if (aux!=0 && aux%(k-1)==0) aux=aux+2;
+			if (aux!=0 && (aux+2)%(k+1)==0) aux=aux+2;
+			aux++;
+		}
+
+		for (unsigned int i=0; i<E.rows(); i++){
+			std::array<int,2> actualdegree=degree[i];
+
+			//calcolo polinomio e gradiente
+			auto poli=[C,diam,actualdegree] (double x, double y)
+			{ return pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,actualdegree[1]); };
+			auto der_x=[C,diam,actualdegree] (double x,double y)	
+{return actualdegree[0]/diam*pow((x-C[0])/diam,std::max(actualdegree[0]-1,0))*pow((y-C[1])/diam,actualdegree[1]);};
+			auto der_y=[C,diam,actualdegree] (double x,double y)
+{return actualdegree[1]/diam*pow((x-C[0])/diam,actualdegree[0])*pow((y-C[1])/diam,std::max(actualdegree[1]-1,0));};
+
+	
+			//contributi dovuti alle funzioni di base relative ai vertici
+			if (j<vertexes.size()){
+				E(i,j)=Normal(j+1)[VAR]*poli(P[j][0],P[j][1])*weights[j*(k+1)];
+				//std::cout<<"Ex("<<i<<","<<j<<")="<<Ex(i,j)<<std::endl;
+				unsigned int next=(j==0 ? vertexes.size() : j);
+				unsigned int position=(j==0 ? weights.size()-1 : j*(k+1)-1);
+				
+				E(i,j)+=Normal(next)[VAR]*poli(P[j][0],P[j][1])*weights[position];
+			}
+
+			//contributi dovuti alle funzioni di base relative ai dof sul bordo
+			else {
+				//std::cout<<"Taking position number "<<aux<<" "<<weights[aux]<<std::endl;
+				E(i,j)=Normal(jj/(k-1)+1)[VAR]*poli(BD[jj][0],BD[jj][1])*weights[aux];
+			}
+
+
 		}
 	}
-	return F;
+
+//ultime colonne
+for (unsigned int j=vertexes.size()+dof.size(); j<E.cols(); j++){
+	for (unsigned int i=0; i<E.rows(); i++){
+		std::array<int,2> actualdegree=degree[i];
+		unsigned int jj=j-vertexes.size()-dof.size();
+
+		double coeff=actualdegree[VAR]/diam;
+		if (VAR==0 && actualdegree[0]-1==degree[jj][0] && actualdegree[1]==degree[jj][1]) {E(i,j)+=-coeff*A; std::cout<<"Inserisco "<<coeff*A<<std::endl;}
+		if (VAR==1 && actualdegree[0]==degree[jj][0] && actualdegree[1]-1==degree[jj][1]) {E(i,j)+=-coeff*A; std::cout<<"Inserisco "<<coeff*A<<std::endl;}
+
+
+	}
 }
-*/
+
+//std::cout<<E;
+return E;
+}
+
+
+

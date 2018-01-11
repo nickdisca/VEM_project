@@ -12,10 +12,10 @@ int main()
 {
 
 
-std::string str="Meshes/Non_uniform/128.dat";
+std::string str="../Meshes/Uniform/1.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
-cout<<m;
+//cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
 cout<<"Maximum diameter = "<<m.max_diam()<<endl;
 //m.boundaryDOF();
@@ -104,26 +104,31 @@ cout<<"Matrix G:"<<endl<<B*D<<endl;
 //auto f=[](double x,double y){return -4.0;};
 //auto g=[](double x,double y){return x*x+y*y;};
 //auto uex=[](double x,double y){return x*x+y*y;};
+//auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+
+
+//exact solution: x^2+y^2 with nonconstant diffusion coefficient
+//auto f=[](double x,double y){return -6.0*x-4.0;};
+//auto g=[](double x,double y){return x*x+y*y;};
+//auto uex=[](double x,double y){return x*x+y*y;};
+//auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
+
 
 //exact solution: sin(x)*sin(y)
 //auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
 //auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
 //auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
 
-//exact solution: x^2*abs(x) centered in x=1/2
-auto f=[](double x,double y){return -6.0*std::abs(x-1./2);};
-auto g=[](double x,double y){return (x-1./2)*(x-1./2)*std::abs(x-1./2);};
-auto uex=[](double x,double y){return (x-1./2)*(x-1./2)*std::abs(x-1./2);};
-
-//exact solution: x*abs(x) centered in x=1/2
-//auto f=[](double x,double y){return -2.0*((x>1./2)?1.0:(x < 1./2)?-1.0:0.);};
-//auto g=[](double x,double y){return (x-1./2)*std::abs(x-1./2);};
-//auto uex=[](double x,double y){return (x-1./2)*std::abs(x-1./2);};
+//exact solution: sin(x)*sin(y) with nonconstant diffusion coefficient
+auto f=[](double x,double y){return 2.0*(x+1.0)*std::sin(x)*std::sin(y)-std::cos(x)*std::sin(y);};
+auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
 
 
 //MatrixType F=m.GlobalLoad(f);
 //cout<<F<<endl;
-MatrixType U=m.solve(f,g);
+MatrixType U=m.solve(f,g, mu, mu_bar, false);
 //cout<<"Solution"<<U<<endl;
 
 MatrixType UEX=m.VEMConvert(uex);

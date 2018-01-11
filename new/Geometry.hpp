@@ -108,10 +108,13 @@ public:
 	MatrixType ComputeB(unsigned int k);
 	MatrixType ComputeG(unsigned int k);
 	MatrixType LocalStiffness(unsigned int k);
-	MatrixType ComputeH(unsigned int k);
+	MatrixType ComputeH(unsigned int k, std::function<double (double,double)> weight);
 	MatrixType ComputeC(unsigned int k);
 	MatrixType LoadTerm(unsigned int k,std::function<double (double,double)> f);
 	MatrixType LocalMass(unsigned int k);
+	MatrixType LocalStiffness_weighted
+		(unsigned int k, std::function<double (double,double)> mu, double mu_bar, bool constant_mu);
+	MatrixType ComputeE(unsigned int k, unsigned int VAR);
 
 	MatrixType LocalConvert(unsigned int k, std::function<double (double,double)> uex);
 

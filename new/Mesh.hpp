@@ -86,12 +86,13 @@ public:
 	//! Test mesh consistency
 	//bool checkmesh()const;
 	//!Assemble global stiffness
-	MatrixType GlobalStiffness();
+	MatrixType GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu);
 	MatrixType GlobalMass();
 	MatrixType GlobalLoad(std::function<double(double,double)> f);
 
 	std::vector<unsigned int> Dirichlet();
-	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g);
+	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g,
+	std::function<double (double,double)> mu, double mu_bar, bool constant_mu);
 
 	//calcolo delle norme: da cambiare tutto con references
 	MatrixType VEMConvert(std::function<double (double,double)> uex);
