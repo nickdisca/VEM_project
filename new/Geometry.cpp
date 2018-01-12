@@ -416,8 +416,38 @@ MatrixType Polygon::LocalStiffness_weighted(unsigned int k, std::function<double
 
 
 
-MatrixType Polygon::ComputeH(unsigned int k,std::function<double (double,double)> weight=[](int x, int y){return 1.0;} ){
-	MatrixType H((k+1)*(k+2)/2,(k+1)*(k+2)/2);
+
+MatrixType Polygon::LocalTransport(unsigned int k, std::function<double (double,double)> beta_x,std::function<double (double,double)> beta_y) {
+	
+	std::cout<<"Computing transport matrix"<<std::endl;
+
+	MatrixType B=ComputeB(k), D=ComputeD(k);
+	MatrixType G=ComputeG(k);
+
+	MatrixType H_minus=ComputeH(k-1,[](double x, double y){return 1.0;});
+	MatrixType H=ComputeH(k,[](double x, double y){return 1.0;});
+	MatrixType H_x=ComputeH(k,beta_x,k-1,k);
+	MatrixType H_y=ComputeH(k,beta_y,k-1,k);
+	MatrixType Ex=ComputeE(k,0);
+	MatrixType Ey=ComputeE(k,1);
+	
+	MatrixType Pi0_starx=(H_minus.lu()).solve(Ex);
+	MatrixType Pi0_stary=(H_minus.lu()).solve(Ey);
+	
+	MatrixType C=ComputeC(k);
+	MatrixType Pi0_star=(H.lu()).solve(C);
+
+	MatrixType transport=Pi0_starx.transpose()*H_x*Pi0_star+Pi0_stary.transpose()*H_y*Pi0_star;
+
+	return transport.transpose();
+}
+
+
+
+
+MatrixType Polygon::ComputeH(unsigned int k, std::function<double (double,double)> weight,
+	unsigned int krows, unsigned int kcols){
+	MatrixType H((krows+1)*(krows+2)/2,(kcols+1)*(kcols+2)/2);
 	std::cout<<"Created matrix H with size "<<H.rows()<<" x "<<H.cols()<<std::endl;
 	std::vector<std::array<int,2> > degree=Polynomials(k);
 	double diam(diameter()); std::cout<<"Diameter "<<diam<<std::endl;
@@ -436,7 +466,7 @@ MatrixType Polygon::ComputeH(unsigned int k,std::function<double (double,double)
 				res=res*weight(x,y);
 				return res;};
 			//calcolo l'integrale
-			H(i,j)=Q.global_int(poli,k+2);
+			H(i,j)=Q.global_int(poli,k+3);
 		}
 
 	}

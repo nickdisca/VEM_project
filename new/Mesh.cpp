@@ -245,6 +245,36 @@ MatrixType Mesh::GlobalMass(){
 }
 
 
+MatrixType Mesh::GlobalTransport(std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y){
+	boundaryDOF();
+
+	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
+	MatrixType B(dim,dim); B.fill(0.0);
+	std::cout<<"Dimensions "<<dim<<std::endl;
+
+	for (unsigned int i=0; i<M_elementList.size(); i++){
+		MatrixType locB=M_elementList[i].LocalTransport(k, beta_x, beta_y);
+		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
+		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		std::vector<unsigned int> line3;
+		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+		std::vector<unsigned int> current=line1;
+		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
+		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
+
+		//assemble global matrix
+		for (unsigned int a=0; a<locB.rows(); a++){
+			for (unsigned int b=0; b<locB.cols(); b++){
+				B(current[a],current[b])+=locB(a,b);
+			}
+		}
+		} //end for of polygons
+	return B;
+}
+
+
+
+
 
 MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
 	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
@@ -280,9 +310,10 @@ MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
 
 
 MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<double (double,double)> g,
-	std::function<double (double,double)> mu, double mu_bar, bool constant_mu){
+	std::function<double (double,double)> mu, double mu_bar, bool constant_mu, 
+	std::function<double (double,double)> beta_x, std::function<double (double,double)> beta_y){
 		
-	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu);
+	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu)+GlobalTransport(beta_x,beta_y);
 	MatrixType F=GlobalLoad(f);
 	std::vector<unsigned int> Dir=Dirichlet();
 	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());

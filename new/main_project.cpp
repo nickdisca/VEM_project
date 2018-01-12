@@ -12,7 +12,7 @@ int main()
 {
 
 
-std::string str="../Meshes/Uniform/1.dat";
+std::string str="../Meshes/Uniform/4.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;
@@ -113,6 +113,14 @@ cout<<"Matrix G:"<<endl<<B*D<<endl;
 //auto uex=[](double x,double y){return x*x+y*y;};
 //auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
 
+//exact solution: x^2+y^2 with transport term
+auto f=[](double x,double y){return 1.0*x*y-4.0;};
+auto g=[](double x,double y){return x*x+y*y;};
+auto uex=[](double x,double y){return x*x+y*y;};
+auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+auto beta_x=[](double x, double y) {return y/4.0;};
+auto beta_y=[](double x, double y) {return x/4.0;};
+
 
 //exact solution: sin(x)*sin(y)
 //auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y);};
@@ -120,15 +128,23 @@ cout<<"Matrix G:"<<endl<<B*D<<endl;
 //auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
 
 //exact solution: sin(x)*sin(y) with nonconstant diffusion coefficient
-auto f=[](double x,double y){return 2.0*(x+1.0)*std::sin(x)*std::sin(y)-std::cos(x)*std::sin(y);};
-auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
-auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
-auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
+//auto f=[](double x,double y){return 2.0*(x+1.0)*std::sin(x)*std::sin(y)-std::cos(x)*std::sin(y);};
+//auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
+
+//exact solution: sin(x)*sin(y) with transport term
+//auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y)+y*std::cos(x)*std::sin(y)+x*std::cos(y)*std::sin(x);};
+//auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+//auto beta_x=[](double x, double y) {return y;};
+//auto beta_y=[](double x, double y) {return x;};
 
 
 //MatrixType F=m.GlobalLoad(f);
 //cout<<F<<endl;
-MatrixType U=m.solve(f,g, mu, mu_bar, false);
+MatrixType U=m.solve(f,g, mu, mu_bar, false, beta_x, beta_y);
 //cout<<"Solution"<<U<<endl;
 
 MatrixType UEX=m.VEMConvert(uex);

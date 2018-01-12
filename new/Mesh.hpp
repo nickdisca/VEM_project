@@ -89,10 +89,12 @@ public:
 	MatrixType GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu);
 	MatrixType GlobalMass();
 	MatrixType GlobalLoad(std::function<double(double,double)> f);
+	MatrixType GlobalTransport(std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y);
 
 	std::vector<unsigned int> Dirichlet();
 	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g,
-	std::function<double (double,double)> mu, double mu_bar, bool constant_mu);
+		std::function<double (double,double)> mu, double mu_bar, bool constant_mu, 
+		std::function<double (double,double)> beta_x, std::function<double (double,double)> beta_y);
 
 	//calcolo delle norme: da cambiare tutto con references
 	MatrixType VEMConvert(std::function<double (double,double)> uex);
