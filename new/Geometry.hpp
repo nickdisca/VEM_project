@@ -36,6 +36,7 @@ public:
 
 	//confronto
 	friend bool operator == (Point const & a, Point const & b){return ((a[0]==b[0]) && (a[1]==b[1]));};
+	//friend bool operator == (Point const & a, Point const & b){return (std::abs(a[0]-b[0])<=1e-8 && std::abs(a[1]-b[1])<=1e-8);};
 	friend bool operator <(Point const &f, Point const &s){
 		if (f[0]==s[0]) return f[1]<s[1];
 		return f[0]<s[0];
