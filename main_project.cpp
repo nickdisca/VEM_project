@@ -12,7 +12,7 @@ int main()
 {
 
 
-std::string str="./Meshes/Uniform/8.dat";
+std::string str="./Meshes/Uniform/32.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;
@@ -134,12 +134,54 @@ cout<<"Matrix G:"<<endl<<B*D<<endl;
 //auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
 
 //exact solution: sin(x)*sin(y) with transport term
-auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y)+y*std::cos(x)*std::sin(y)+x*std::cos(y)*std::sin(x);};
-auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
-auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
-auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
-auto beta_x=[](double x, double y) {return y;};
-auto beta_y=[](double x, double y) {return x;};
+//auto f=[](double x,double y){return 2.0*std::sin(x)*std::sin(y)+y*std::cos(x)*std::sin(y)+x*std::cos(y)*std::sin(x);};
+//auto g=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto uex=[](double x,double y){return std::sin(x)*std::sin(y);};
+//auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+//auto beta_x=[](double x, double y) {return y;};
+//auto beta_y=[](double x, double y) {return x;};
+
+
+
+
+
+//exact solution: sin(2*pi*x)*sin(2*pi*y) for Laplace problem
+//double PI=4.0*std::atan(1.0);
+//auto f=[PI](double x,double y){return 2.0*4.0*PI*PI*std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
+//auto g=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
+//auto uex=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
+//auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+//auto beta_x=[](double x, double y) {return 0.;};
+//auto beta_y=[](double x, double y) {return 0.;};
+
+//exact solution: x+y for Laplace problem
+//auto f=[](double x,double y){return 0.0;};
+//auto g=[](double x,double y){return x+y;};
+//auto uex=[](double x,double y){return x+y;};
+//auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+//auto beta_x=[](double x, double y) {return 0.;};
+//auto beta_y=[](double x, double y) {return 0.;};
+
+//exact solution: x^2+y^2 for elliptic problem
+//auto f=[](double x,double y){return -4.0-4.0*x+2.0*y;};
+//auto g=[](double x,double y){return x*x+y*y;};
+//auto uex=[](double x,double y){return x*x+y*y;};
+//auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
+//auto beta_x=[](double x, double y) {return 1.0;};
+//auto beta_y=[](double x, double y) {return 1.0;};
+
+//exact solution: sin(2*pi*x)*sin(2*pi*y) for elliptic problem
+double PI=4.0*std::atan(1.0);
+auto f=[PI](double x,double y){return -2.0*PI*(std::cos(2.0*PI*x)*std::sin(2.0*PI*y)-
+	2.0*PI*(x+1.0)*std::sin(2.0*PI*x)*std::sin(2.0*PI*y)-2*PI*(x+1.0)*std::sin(2.0*PI*x)*std::sin(2.0*PI*y))+2.0*PI*
+	(std::cos(2.0*PI*x)*std::sin(2.0*PI*y)+std::sin(2.0*PI*x)*std::cos(2.0*PI*y));};
+auto g=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
+auto uex=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
+auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
+auto beta_x=[](double x, double y) {return 1.0;};
+auto beta_y=[](double x, double y) {return 1.0;};
+
+
 
 
 //MatrixType F=m.GlobalLoad(f);
