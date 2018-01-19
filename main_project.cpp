@@ -12,7 +12,7 @@ int main()
 {
 
 
-std::string str="./Meshes/Uniform/32.dat";
+std::string str="./Meshes/Uniform/16.dat";
 MeshReader read(false);
 Mesh m(str,read,2);
 //cout<<m;

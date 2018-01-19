@@ -9,6 +9,8 @@
 #include <sstream>
 #include <math.h>
 #include "Geometry.hpp"
+#include <Eigen/Sparse>
+
 
 class Mesh; //pura dichiarazione, la definisco dopo
 
@@ -86,10 +88,11 @@ public:
 	//! Test mesh consistency
 	//bool checkmesh()const;
 	//!Assemble global stiffness
-	MatrixType GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu);
+	MatrixType GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu,
+		std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y);
+		
 	MatrixType GlobalMass();
 	MatrixType GlobalLoad(std::function<double(double,double)> f);
-	MatrixType GlobalTransport(std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y);
 
 	std::vector<unsigned int> Dirichlet();
 	MatrixType solve(std::function<double (double,double)> f, std::function<double (double,double)> g,
@@ -98,9 +101,10 @@ public:
 
 	//calcolo delle norme: da cambiare tutto con references
 	MatrixType VEMConvert(std::function<double (double,double)> uex);
-	double normInf(MatrixType uex,MatrixType u);
-	double H1seminorm(MatrixType uex, MatrixType u, MatrixType K);
-	void Allnorms(MatrixType uex, MatrixType u);
+	
+	double normInf(MatrixType & uex,MatrixType & u);
+	void Allnorms(MatrixType & uex, MatrixType & u);
+	
 	//! output
 	friend std::ostream & operator << (std::ostream &, const Mesh &);
 private:

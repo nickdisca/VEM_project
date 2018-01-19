@@ -149,29 +149,28 @@ double Mesh::max_diam()const {
 
 
 
-
+//boundary dofs sets the indexes for the dofs on the edges, not necessarily Dirichlet ones
 void Mesh::boundaryDOF(){
-	//std::set<Point> M_set;
-	//M_edgesDOF.clear();
+
 	for (unsigned int i=0; i<M_elementList.size(); i++){
+		
 		auto points=M_elementList[i].getPoints();
 		std::vector<Point> nodes;
 		std::vector<double> weights;
 		computeDOF(points,k,weights,nodes);
+		
 		std::vector<unsigned int> line;
 		for (unsigned int j=0; j<nodes.size(); j++) {
-			//insert if is not in the vector
+			
+			//if is not in the vector, insert it, otherwise gives the index
 			auto index=std::find(M_edgesDOF.begin(),M_edgesDOF.end(),nodes[j]);
-			if (index==M_edgesDOF.end())
-				{M_edgesDOF.push_back(nodes[j]); line.push_back(M_edgesDOF.size()-1); 
-					//std::cout<<std::distance(M_edgesDOF.begin(),index+1)<<"hh"<<std::endl;
-				}
-			else {line.push_back(std::distance(M_edgesDOF.begin(),index));
-					//std::cout<<std::distance(M_edgesDOF.begin(),index)<<"hh"<<std::endl;
-				}
-			//auto status=M_set.insert(nodes[j]);
-			//for (auto kk : M_edgesDOF) std::cout<<kk<<std::endl;
-			//std::cout<<"Inserted element number "<<line[line.size()-1]<<"corresponding to point "<<nodes[j];
+			if (index==M_edgesDOF.end()) {
+				M_edgesDOF.push_back(nodes[j]); line.push_back(M_edgesDOF.size()-1); 
+			}
+			else 
+				line.push_back(std::distance(M_edgesDOF.begin(),index));
+				
+			//setting dofs for the polygon
 			M_elementList[i].setDof(line,&M_edgesDOF);
 		}
 	}
@@ -179,16 +178,21 @@ void Mesh::boundaryDOF(){
 }
 
 
-
-MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu){
-	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
-	//dimensione: dof interni + numero vertici + boundary + dof interni
+//diffusion+transport term
+MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu, 
+	std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y){
+	
+	boundaryDOF(); 
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType K(dim,dim); K.fill(0.0);
-	std::cout<<"Dimensions "<<dim<<std::endl;
+	MatrixType K(dim,dim); 
+	//K.fill(0.0);
+	std::cout<<"Dimension of the global stiffness matrix is "<<dim<<std::endl;
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
-		MatrixType locK=M_elementList[i].LocalStiffness_weighted(k,mu,mu_bar,constant_mu);
+		
+		MatrixType locK=M_elementList[i].LocalStiffness_weighted(k,mu,mu_bar,constant_mu)+
+			M_elementList[i].LocalTransport(k, beta_x, beta_y);
+		
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		std::vector<unsigned int> line3;
@@ -197,31 +201,33 @@ MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, doub
 		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
 		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
 
-		std::cout<<"Current dofs: ";
-		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+		//std::cout<<"Current dofs: ";
+		//for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
 
-		//assemble global matrix
+		//assemble global stiffness matrix
 		for (unsigned int a=0; a<locK.rows(); a++){
 			for (unsigned int b=0; b<locK.cols(); b++){
-				//std::cout<<"Inserisco elemento "<<a<<" "<<b<<" in posizione "<<current[a]<<" "<<current[b]<<std::endl;
 				K(current[a],current[b])+=locK(a,b);
 			}
 		}
-		} //end for of polygons
+		
+	} //end loop i
+	
 	return K;
 }
 
 
 
 MatrixType Mesh::GlobalMass(){
-	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
+	boundaryDOF();
 
-	//dimensione: dof interni + numero vertici + boundary + dof interni
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType M(dim,dim); M.fill(0.0);
-	std::cout<<"Dimensions "<<dim<<std::endl;
+	MatrixType M(dim,dim); 
+
+	std::cout<<"Dimension of the global mass matrix is "<<dim<<std::endl;
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
+		
 		MatrixType locM=M_elementList[i].LocalMass(k);
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
@@ -231,8 +237,8 @@ MatrixType Mesh::GlobalMass(){
 		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
 		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
 
-		std::cout<<"Current dofs: ";
-		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+		//std::cout<<"Current dofs: ";
+		//for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
 
 		//assemble global matrix
 		for (unsigned int a=0; a<locM.rows(); a++){
@@ -240,69 +246,50 @@ MatrixType Mesh::GlobalMass(){
 				M(current[a],current[b])+=locM(a,b);
 			}
 		}
-		} //end for of polygons
+		
+		} //end loop i
+		
 	return M;
 }
 
 
-MatrixType Mesh::GlobalTransport(std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y){
-	boundaryDOF();
-
-	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType B(dim,dim); B.fill(0.0);
-	std::cout<<"Dimensions "<<dim<<std::endl;
-
-	for (unsigned int i=0; i<M_elementList.size(); i++){
-		MatrixType locB=M_elementList[i].LocalTransport(k, beta_x, beta_y);
-		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
-		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
-		std::vector<unsigned int> line3;
-		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
-		std::vector<unsigned int> current=line1;
-		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
-		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
-
-		//assemble global matrix
-		for (unsigned int a=0; a<locB.rows(); a++){
-			for (unsigned int b=0; b<locB.cols(); b++){
-				B(current[a],current[b])+=locB(a,b);
-			}
-		}
-		} //end for of polygons
-	return B;
-}
 
 
 
 
 
 MatrixType Mesh::GlobalLoad(std::function<double(double,double)> f){
-	boundaryDOF(); //std::cout<<"Number of BD = "<<M_edgesDOF.size()<<std::endl;
+	boundaryDOF();
 
-	//dimensione: dof interni + numero vertici + boundary + dof interni
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType F(dim,1); F.fill(0.0);
-	std::cout<<"Dimensions "<<dim<<std::endl;
+	MatrixType F(dim,1); 
+	F.fill(0.0);
+	std::cout<<"Dimension of the global load term is "<<dim<<std::endl;
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
-		MatrixType locF=M_elementList[i].LoadTerm(k,f);
-		//std::cout<<locF;
+		
+		MatrixType locF=M_elementList[i].LoadTerm(k,f); //compute local load term
+		
+		//find the indexes of the dofs of the polygon w.r.t. global problem
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		std::vector<unsigned int> line3;
 		for (unsigned int j=0; j<k*(k-1)/2; j++) line3.push_back(j); 
+	
 		std::vector<unsigned int> current=line1;
 		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
 		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
 
-		std::cout<<"Current dofs: ";
-		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+		//std::cout<<"Current dofs: ";
+		//for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
 
 		//assemble global vector
 		for (unsigned int a=0; a<locF.rows(); a++){
 			F(current[a],0)+=locF(a,0);
 		}
-		} //end for of polygons
+		
+		} //end loop i
+		
 	return F;
 }
 
@@ -313,112 +300,165 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 	std::function<double (double,double)> mu, double mu_bar, bool constant_mu, 
 	std::function<double (double,double)> beta_x, std::function<double (double,double)> beta_y){
 		
-	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu)+GlobalTransport(beta_x,beta_y);
+	//compute global LHS and RHS
+	std::cout<<"Computing global stiffness matrix"<<std::endl;
+	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu, beta_x, beta_y);
+	std::cout<<"Computing global load term"<<std::endl;
 	MatrixType F=GlobalLoad(f);
+	//compute indexes associated with dofs on the domain boundary to apply Dirichlet BC
 	std::vector<unsigned int> Dir=Dirichlet();
+	
+	//we create 2 matrices, where I (B) denotes internal (boundary)
+	std::cout<<"Total degrees of freedom are "<<F.rows()<<std::endl;
 	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());
-	std::cout<<KII.rows()<<"  "<<KII.cols()<<std::endl;
-	MatrixType KIB(K.rows()-Dir.size(),Dir.size());
-	std::cout<<KIB.rows()<<"  "<<KIB.cols()<<std::endl;
+	std::cout<<"Size of internal-internal matrix is "<<KII.rows()<<" x "<<KII.cols()<<std::endl;
+	MatrixType KIB(K.rows()-Dir.size(),Dir.size());	
+	std::cout<<"Size of internal-boundary matrix is "<<KIB.rows()<<" x "<<KIB.cols()<<std::endl;
+	
+	//we create 1 vector to store internal load term (boundary one not needed)
 	MatrixType FI(F.rows()-Dir.size(),1);
+	
+	//fill matrices
 	int ii=-1, jj=0,jjj=0;
-
-	for (unsigned int i=0; i<K.rows(); i++){
-		//std::cout<<i<<std::endl;
+	for (unsigned int i=0; i<K.rows(); i++){ //loop over rows
 		jj=0; jjj=0;
+		
 		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
-		ii++; //se la i non è di Dirichlet aumenta di 1
-		for (unsigned int j=0; j<K.cols(); j++){
-			if (find(Dir.begin(),Dir.end(),j)==Dir.end()) //se anche j non è di Dirichlet inserisci in KII
-				{KII(ii,jj)=K(i,j); //std::cout<<"internal"<<ii<<"  "<<jj<<std::endl; 
-				jj++;
+			ii++; //if i is not Dirichlet index, increase ii by one
+			for (unsigned int j=0; j<K.cols(); j++){ //loop over columns
+				if (find(Dir.begin(),Dir.end(),j)==Dir.end()) { 
+					KII(ii,jj)=K(i,j); //if also j is not Dirichlet, insert in KII
+					jj++;
 				}
-			else {KIB(ii,jjj)=K(i,j); //std::cout<<"boundary"<<ii<<"  "<<jjj<<std::endl; 
-				jjj++;
-					}
+				else {
+					KIB(ii,jjj)=K(i,j); //otherwise insert in KIB
+					jjj++;
+				}
 		}
 		}
-	} //fine for
+	} //end loop i
 
-	//termine noto
+	//fill vector: if i is not Dirichlet, put in FI
 	ii=0;
-
-	std::cout<<"Rows "<<F.rows();
 	for (unsigned int i=0; i<F.rows(); i++){
-		//std::cout<<"hey"<<i<<std::endl;
-		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {FI(ii,0)=F(i,0); ii++;}
+		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
+			FI(ii,0)=F(i,0); 
+			ii++;
+			}
 	}
-	//std::cout<<FI<<std::endl;
 
-	//real solution
-	MatrixType U(K.rows(),1), UB(Dir.size(),1);
+	//final solution
+	MatrixType U(K.rows(),1);
+	
+	//create a boundary solution to store Dirichlet boundary condition (i.e. apply BC)
+	MatrixType UB(Dir.size(),1);
 	ii=0;
 	for (unsigned int i=0; i<U.rows(); i++){
-		//std::cout<<i<<std::endl;
 		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
+			
+			//if Dirichlet node, get the point
 			Point PP;
-			if(i<M_pointList.size()) PP=M_pointList[i];
-			else PP=M_edgesDOF[i-M_pointList.size()];
+			if(i<M_pointList.size()) 
+				PP=M_pointList[i];
+			else 
+				PP=M_edgesDOF[i-M_pointList.size()];
+				
+			//compute boundary data in that point
 			UB(ii,0)=g(PP[0],PP[1]); 
-			ii++;}
-	}
-	//std::cout<<UB<<std::endl;
+			ii++;
+		
+		}
+	} //end loop i
 
-	//solve
+
+
+	//solve the system
+	std::cout<<"Solving the linear system"<<std::endl;
+	
+	//create a vector to store the result of system solution
 	MatrixType UI(U.rows()-UB.rows(),1);
-	UI=(KII.lu()).solve(FI-KIB*UB);
-	//assemble back
+	//solve
+	//UI=(KII.lu()).solve(FI-KIB*UB);
+	Eigen::BiCGSTAB<Eigen::SparseMatrix<double> > solver; solver.compute(KII.sparseView()); UI=solver.solve(FI-KIB*UB);
+	
+	//gather contributions from UI and UB
 	ii=0; unsigned int iii=0;
 	for (unsigned int i=0; i<U.rows(); i++){
-		//std::cout<<i<<std::endl;
+		
 		if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
-			U(i,0)=UB(ii,0); ii++;}
-		else {U(i,0)=UI(iii,0); iii++;}
-	}
-	std::cout<<"Solution:"<<std::endl<<U<<std::endl;
-	//std::cout<<"MATRICE"<<KIB;
+			U(i,0)=UB(ii,0); //if it is Dirichlet take from UB 
+			ii++;
+		}
+		else {
+			U(i,0)=UI(iii,0); //else take from UI
+			iii++;
+		}
+		
+	} //end loop i
+	
+	//print VEM solution on screen
+	//std::cout<<"Solution:"<<std::endl<<U<<std::endl;
 
-	//print solution
+	//print VEM solution on file (usually I need only boundary dofs, integrals are not needed)
 	std::ofstream file("output.dat");
 	for (unsigned int i=0; i<M_pointList.size(); i++) 
 		file<<M_pointList[i][0]<<"\t"<<M_pointList[i][1]<<"\t"<<U(i,0)<<std::endl;
 	for (unsigned int i=0; i<M_edgesDOF.size(); i++) 
 		file<<M_edgesDOF[i][0]<<"\t"<<M_edgesDOF[i][1]<<"\t"<<U(i+M_pointList.size(),0)<<std::endl;
-	//internal DOFs
+	//internal dofs (if needed)
 	//for (unsigned int i=0; i<k*(k-1)/2*M_elementList.size(); i++) 
 	//	file<<"Polygon "<<i/(k*(k-1)/2)<<" dof number "<<i%(k*(k-1)/2)<<" "<<U(i+M_pointList.size()+M_edgesDOF.size(),0)<<std::endl;
 	file<<std::endl;
-//end function
-return U;
+	
+	file.close();
+
+
+	return U;
 }
 
+
+
+
 std::vector<unsigned int> Mesh::Dirichlet(){
+	
 	std::vector<unsigned int> Dir=M_boundary;
+	
+	//for each polygon, loop over dofs and find if it is a boundary dof
 	for (unsigned int i=0; i<M_elementList.size(); i++){
+		
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
+		
+		//strategy: if both vertexes are boundary dofs, then the all the intermediate GL points are boundary
+		//note: this works only if I have at least two elements in each direction (it has to be modified)
+		
 		for (unsigned int j=0; j<line1.size(); j++){
 			//se entrambi gli estremi sono di bordo, allora il dof è di bordo (NON è VERO!)
 			if (find(M_boundary.begin(), M_boundary.end(),line1[j])!=M_boundary.end() &&
 				find(M_boundary.begin(), M_boundary.end(),line1[(j+1)%line1.size()])!=M_boundary.end())
-				{for (unsigned int z=0; z<k-1; z++) Dir.push_back(line2[j*(k-1)+z]+M_pointList.size());} 
+		
+				for (unsigned int z=0; z<k-1; z++) 
+					Dir.push_back(line2[j*(k-1)+z]+M_pointList.size());
+					 
 		}
-	}
-	for (auto i : Dir) std::cout<<"Indici di bordo "<<i<<std::endl;
+	
+	} //end loop i
+	
+	//for (auto i : Dir) std::cout<<"Boundary indexes: "<<i<<std::endl;
+	
 	return Dir;
 }
 
 
 MatrixType Mesh::VEMConvert(std::function<double (double,double)> uex){
 
-	//costruisco vettore che approssima con i vem
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType U(dim,1); U.fill(0.0);
-	std::cout<<"Dimensions "<<dim<<std::endl;
+	MatrixType U(dim,1); 
 
 	for (unsigned int i=0; i<M_elementList.size(); i++){
+		
 		MatrixType locU=M_elementList[i].LocalConvert(k,uex);
-		std::cout<<locU;
+
 		std::vector<unsigned int> line1=M_elementList[i].getVertexes();
 		std::vector<unsigned int> line2=M_elementList[i].getBDindexes();
 		std::vector<unsigned int> line3;
@@ -427,238 +467,56 @@ MatrixType Mesh::VEMConvert(std::function<double (double,double)> uex){
 		for (unsigned int j=0; j<line2.size(); j++) current.push_back(line2[j]+M_pointList.size());
 		for (unsigned int j=0; j<line3.size(); j++) current.push_back(line3[j]+M_pointList.size()+M_edgesDOF.size()+i*k*(k-1)/2);
 
-		std::cout<<"Current dofs: ";
-		for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
+		//std::cout<<"Current dofs: ";
+		//for (auto j : current) std::cout<<j<<" "; std::cout<<std::endl;
 
-		//assemble global vector (mi basta un singolo integrale, l'if è indifferente metterlo o no)
+		//assemble global vector (note: I do not do += otherwise I sum multiple contributions from the same dof)
 		for (unsigned int a=0; a<locU.rows(); a++){
-			//if (current[a]>=line1.size()+line2.size()) ????
-			//	U(current[a],0)+=locU(a,0);
-			//else 
 				U(current[a],0)=locU(a,0);
 		}
-		} //end for of polygons
+		
+	} //end loop i
+	
 	return U;
 }
 
 
-double Mesh::normInf(MatrixType uex,MatrixType u){
+double Mesh::normInf(MatrixType & uex,MatrixType & u){
+	
+	//consider only boundary dofs
 	unsigned int maxindex=M_pointList.size()+M_edgesDOF.size();
+	
 	MatrixType diff=uex-u;
 	double norm=0.0;
 	for (unsigned int i=0; i<maxindex; i++)
 		norm=std::max(norm,std::abs(diff(i,0)));
-	//std::cout<<"Expected "<<norm<<std::endl;
-	/*
-	maxindex=diff.rows(); norm=0.0;
-	for (unsigned int i=0; i<maxindex; i++)
-		norm=std::max(norm,std::abs(diff(i,0)));
-	std::cout<<"wrong"<<norm<<std::endl;
-	*/
+
 	return norm;
 }
 
-double Mesh::H1seminorm(MatrixType uex, MatrixType u, MatrixType K){
-	MatrixType temp=((u-uex).transpose())*K*(u-uex);
-	return std::sqrt(temp(0,0));
-}
 
 
-void Mesh::Allnorms(MatrixType u, MatrixType uex){
-	MatrixType K=GlobalStiffness([](double x, double y) {return 1.0;},1.0,true);
+void Mesh::Allnorms(MatrixType & u, MatrixType & uex){
+	
+	
+	MatrixType K=GlobalStiffness([](double x, double y) {return 1.0;},1.0,true,
+		[](double x, double y) {return 0.0;}, [](double x, double y) {return 0.0;});
 	MatrixType M=GlobalMass();
 
-	std::cout<<"Exact solution (converted VEM): "<<std::endl<<uex<<std::endl;
-	std::cout<<"VEM approximation of exact solution (numerical): "<<std::endl<<u<<std::endl;
+	//std::cout<<"Exact solution (converted VEM): "<<std::endl<<uex<<std::endl;
+	//std::cout<<"VEM approximation of exact solution (numerical): "<<std::endl<<u<<std::endl;
 
 	std::cout<<"Infinity norm: "<<normInf(uex,u)<<std::endl;
 
-	MatrixType tmp=((u-uex).transpose())*K*(u-uex);
-	std::cout<<"H1 seminorm: "<<std::sqrt(tmp(0,0))<<std::endl;
+	MatrixType H10=((u-uex).transpose())*K*(u-uex);
+	std::cout<<"H1 seminorm: "<<std::sqrt(H10(0,0))<<std::endl;
 
-	MatrixType temp=((u-uex).transpose())*M*(u-uex);
-	std::cout<<"L2 norm: "<<std::sqrt(temp(0,0))<<std::endl;
-	//std::cout<<tmp(0,0)<<" "<<temp(0,0)<<std::endl;
-	std::cout<<"H1 norm: "<<std::sqrt(tmp(0,0)+temp(0,0))<<std::endl;
+	MatrixType L2=((u-uex).transpose())*M*(u-uex);
+	std::cout<<"L2 norm: "<<std::sqrt(L2(0,0))<<std::endl;
+
+	std::cout<<"H1 norm: "<<std::sqrt(H10(0,0)+L2(0,0))<<std::endl;
 	return;
 }
-
-/*
-
-
-		vector<unsigned int> V=line;
-		for (auto i : line2) V.push_back(i+coord.size());
-		for (auto i : line3) V.push_back(i+coord.size()+(k-1)*edges.size());
-		for (auto i : V) cout<<i<<" ";
-			cout<<endl;
-		
-		for (unsigned int i=0; i<locK.rows(); i++){
-			for (unsigned int j=0; j<locK.cols(); j++){
-				K(V[i],V[j])+=locK(i,j);
-			}
-		}
-		
-
-	}
-
-	return K;
-};
-*/
-
-
-/*
-	// Scan file lines
-    // Skip until data or end of file
-      skipInput(f,std::string("DATA"));
-      // If the string is not found, abort
-      if(f.eof()||f.fail()){
-	std::cerr << "FILE ERROR! Cannot find #DATA" << std::endl;
-	return 2;
-      }
-      // Read number of points and elements
-      int nP, nE;
-      f >> nP >> nE;
-      if(this->M_verbose)std::cout<<"Number of points="<<nP<<
-			   " Number of elements="<<nE<<std::endl;
-      pl.reserve(nP);
-      el.reserve(nE);
-      // Now look for the points
-      skipInput(f,std::string("POINTS"));
-      // If the string is not found, abort
-      if(f.eof()||f.fail()||f.bad())
-      	{ std::cerr << "FILE ERROR! cannot find # POINTS" << std::endl;
-	  return 3; }
-      
-      // Fill point data structures
-      for(int i = 0; i < nP; ++i) {
-      	Point P;
-      	double x,y;
-      	int id;
-      	f >> x>>y>>id;
-      	P[0]=x;
-      	P[1]=y;
-      	P.bcId()=id;
-      	//std::cout<<x<<" " <<y<<" "<< id<<" "<<pl.size()<<std::endl;
-      	//std::cout<<P[0]<<" " <<P[1]<<" "<< P.bcId()<<" "<<pl.size()<<std::endl;
-      	P.id()=pl.size();
-      	pl.push_back(P);
-	if(f.eof()||f.fail())
-	  { std::cerr << "FILE ERROR! cannot read all point" << std::endl;
-	    return 3; }
-      }
-      if(this->M_verbose){
-	std::cout<<"Points read"<<std::endl;
-	std::cout << "Reading elements" << std::endl;
-      }
-      skipInput(f,std::string("ELEMENTS"));
-      
-      // If the string is not found, abort
-      if(f.eof()||f.fail())
-      	{ std::cerr << "FILE ERROR! Cannot find # ELEMENTS" << std::endl;
-	  return 4; }
-      // Fill element data structures
-      for(int i = 0; i < nE; i++) {
-      	int type;
-        f >> type;
-        if(type != 0) {
-	  std::cerr << "I can read only triangular elements"<< std::endl;
-	  return 5;
-        }
-        int i1,i2,i3;
-        if (!f.eof())f >> i1 >> i2 >> i3;
-        if(f.eof()||f.fail()){
-	  std::cerr << "FILE ERROR! Cannot read elements" << std::endl;
-	  return 5; }
-        Triangle t(pl[i1],pl[i2],pl[i3]);
-        t.id()=el.size();
-        t.bcId()=0;
-        el.emplace_back(std::move(t));
-      }
-      f.close();
-      return 0;
-      */
-
-
-
-/*
-
-
-  bool Mesh::checkmesh() const{
-    using std::clog;
-    using std::endl;
-    using std::cerr;
-    bool status(false);
-    clog<<"Mesh stores: "<<endl;
-    clog<<this->num_elements()<<" Elements"<<endl;
-    clog<<this->num_points()<<" Points"<<endl;
-    clog<<this->num_edges()<<" Edges"<<endl;
-    clog<<this->num_bEdges()<<" Boundary Edges"<<endl;
-    int count(0);
-    int bccount(0);
-    int wrongid(0);
-    size_type idcount(0);
-    for(std::vector<Point>::const_iterator i=M_pointList.begin();
-	i!=M_pointList.end(); ++i)
-      {
-	if (i->unassignedId())++count;
-	if (i->unassignedBc())++bccount;
-	if (i->id()!=idcount++)++wrongid;
-	
-      }
-    clog<<"Mesh has "<<count<<" unassigned point id and "<<
-      bccount<<" unassigned point bc markers"<<endl;
-    status=wrongid>0;
-    if(wrongid>0)cerr<<"Mesh has "<<wrongid<<" wrong point id set";
-    count=0;
-    bccount=0;
-    wrongid=0;
-    idcount=0;
-    int punset(0);
-    for(std::vector<Triangle>::const_iterator i=M_elementList.begin();
-	i!=M_elementList.end(); ++i)
-      {
-	if (i->unassignedId())++count;
-	if (i->unassignedBc())++bccount;
-	if (i->id()!=idcount++)++wrongid;
-	if (i->empty())++punset;Tria
-      }
-    clog<<"Mesh has "<<count<<" unassigned element id and "<<
-      bccount<<" unassigned element bc markers"<<endl;
-    status=status||wrongid>0||punset>0;
-    if(wrongid>0)cerr<<"Mesh has "<<wrongid<<" wrong element id set";
-    if(punset>0)cerr<<"Mesh has "<<punset<<" points unset";
-    if(!status)clog<<"Domain area:"<<this->measure()<<endl;
-    return status;
-  }
-
-  std::ostream & operator<<(std::ostream & out, Mesh const& m)
-  {
-    out<< " ***** MESH  INFORMATION ******"<<std::endl;
-    out<<" Num Points="<<m.num_points()<<" "<<" Num elements="<<m.num_elements()<<" "
-       <<"Num. edges="<<m.num_edges()<<" "<<"Num Boundary Edges="
-       <<m.num_bEdges()<<std::endl;
-    out<< "POINTS:"<<std::endl;
-    int oprec=out.precision(10);
-    std::ios_base::fmtflags oflags=
-      out.setf(std::ios_base::scientific,std::ios_base::floatfield);
-    for (std::size_t i=0;i<m.num_points();++i){
-      Point p=m.point(i);
-      double x=p[0];
-      double y=p[1];
-      out<<i<<" "<<x<<" "<<y<<std::endl;
-    }
-    out<<" TRIANGLE CONNECTIVITY AND AREA:"<<std::endl;
-    for (std::size_t i=0; i<m.num_elements();++i){
-      Triangle t=m.triangle(i);
-      out<<i<<" "<<t[0].id()<<" "<<t[1].id()<<" "<<t[2].id()<<
-	" "<<t.measure()<<std::endl;
-    }
-    out.precision(oprec);
-    out.flags(oflags);
-    return out;
-  }
-*/
-
 
 
 
