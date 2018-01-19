@@ -11,6 +11,7 @@
 #include "Geometry.hpp"
 #include <Eigen/Sparse>
 
+using MatrixType_S=Eigen::SparseMatrix<double>;
 
 class Mesh; //pura dichiarazione, la definisco dopo
 
@@ -88,10 +89,10 @@ public:
 	//! Test mesh consistency
 	//bool checkmesh()const;
 	//!Assemble global stiffness
-	MatrixType GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu,
+	MatrixType_S GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu,
 		std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y);
 		
-	MatrixType GlobalMass();
+	MatrixType_S GlobalMass();
 	MatrixType GlobalLoad(std::function<double(double,double)> f);
 
 	std::vector<unsigned int> Dirichlet();

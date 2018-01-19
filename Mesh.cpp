@@ -179,12 +179,12 @@ void Mesh::boundaryDOF(){
 
 
 //diffusion+transport term
-MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu, 
+MatrixType_S Mesh::GlobalStiffness(std::function<double (double, double)> mu, double mu_bar, bool constant_mu, 
 	std::function<double (double, double)> beta_x, std::function<double (double, double)> beta_y){
 	
 	boundaryDOF(); 
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType K(dim,dim); 
+	MatrixType_S K(dim,dim); 
 	//K.fill(0.0);
 	std::cout<<"Dimension of the global stiffness matrix is "<<dim<<std::endl;
 
@@ -207,7 +207,7 @@ MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, doub
 		//assemble global stiffness matrix
 		for (unsigned int a=0; a<locK.rows(); a++){
 			for (unsigned int b=0; b<locK.cols(); b++){
-				K(current[a],current[b])+=locK(a,b);
+				K.coeffRef(current[a],current[b])+=locK(a,b);
 			}
 		}
 		
@@ -218,11 +218,11 @@ MatrixType Mesh::GlobalStiffness(std::function<double (double, double)> mu, doub
 
 
 
-MatrixType Mesh::GlobalMass(){
+MatrixType_S Mesh::GlobalMass(){
 	boundaryDOF();
 
 	unsigned int dim=M_pointList.size()+M_edgesDOF.size()+M_elementList.size()*(k-1)*(k)/2;
-	MatrixType M(dim,dim); 
+	MatrixType_S M(dim,dim); 
 
 	std::cout<<"Dimension of the global mass matrix is "<<dim<<std::endl;
 
@@ -243,7 +243,7 @@ MatrixType Mesh::GlobalMass(){
 		//assemble global matrix
 		for (unsigned int a=0; a<locM.rows(); a++){
 			for (unsigned int b=0; b<locM.cols(); b++){
-				M(current[a],current[b])+=locM(a,b);
+				M.coeffRef(current[a],current[b])+=locM(a,b);
 			}
 		}
 		
@@ -302,55 +302,19 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 		
 	//compute global LHS and RHS
 	std::cout<<"Computing global stiffness matrix"<<std::endl;
-	MatrixType K=GlobalStiffness(mu,mu_bar,constant_mu, beta_x, beta_y);
+	MatrixType_S K=GlobalStiffness(mu,mu_bar,constant_mu, beta_x, beta_y);
 	std::cout<<"Computing global load term"<<std::endl;
 	MatrixType F=GlobalLoad(f);
 	//compute indexes associated with dofs on the domain boundary to apply Dirichlet BC
 	std::vector<unsigned int> Dir=Dirichlet();
 	
-	//we create 2 matrices, where I (B) denotes internal (boundary)
-	std::cout<<"Total degrees of freedom are "<<F.rows()<<std::endl;
-	MatrixType KII(K.rows()-Dir.size(),K.cols()-Dir.size());
-	std::cout<<"Size of internal-internal matrix is "<<KII.rows()<<" x "<<KII.cols()<<std::endl;
-	MatrixType KIB(K.rows()-Dir.size(),Dir.size());	
-	std::cout<<"Size of internal-boundary matrix is "<<KIB.rows()<<" x "<<KIB.cols()<<std::endl;
-	
-	//we create 1 vector to store internal load term (boundary one not needed)
-	MatrixType FI(F.rows()-Dir.size(),1);
-	
-	//fill matrices
-	int ii=-1, jj=0,jjj=0;
-	for (unsigned int i=0; i<K.rows(); i++){ //loop over rows
-		jj=0; jjj=0;
-		
-		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
-			ii++; //if i is not Dirichlet index, increase ii by one
-			for (unsigned int j=0; j<K.cols(); j++){ //loop over columns
-				if (find(Dir.begin(),Dir.end(),j)==Dir.end()) { 
-					KII(ii,jj)=K(i,j); //if also j is not Dirichlet, insert in KII
-					jj++;
-				}
-				else {
-					KIB(ii,jjj)=K(i,j); //otherwise insert in KIB
-					jjj++;
-				}
-		}
-		}
-	} //end loop i
 
-	//fill vector: if i is not Dirichlet, put in FI
-	ii=0;
-	for (unsigned int i=0; i<F.rows(); i++){
-		if (find(Dir.begin(),Dir.end(),i)==Dir.end()) {
-			FI(ii,0)=F(i,0); 
-			ii++;
-			}
-	}
+	int ii=-1, jj=0,jjj=0;
 
 	//final solution
 	MatrixType U(K.rows(),1);
 	
-	//create a boundary solution to store Dirichlet boundary condition (i.e. apply BC)
+	//create a boundary solution to store Dirichlet boundary condition
 	MatrixType UB(Dir.size(),1);
 	ii=0;
 	for (unsigned int i=0; i<U.rows(); i++){
@@ -371,6 +335,22 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 	} //end loop i
 
 
+	//set to zeros entries of the matrix whenever the row index is boundary
+	for (int k=0; k<K.outerSize(); ++k)
+		for (MatrixType_S::InnerIterator it(K,k); it; ++it) {
+		if (find(Dir.begin(),Dir.end(),it.row())!=Dir.end()){
+			K.coeffRef(it.row(),it.col())=0.0;
+			}
+		}
+
+	ii=0;
+	for (unsigned int i=0; i<F.rows(); i++){
+			if (find(Dir.begin(),Dir.end(),i)!=Dir.end()) {
+				K.coeffRef(i,i)=1.0; //identity matrix at boundary indexes
+				F(i,0)=UB(ii,0); //the source term is equal to the boundary value
+				ii++; 
+			}
+	}
 
 	//solve the system
 	std::cout<<"Solving the linear system"<<std::endl;
@@ -378,8 +358,7 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 	//create a vector to store the result of system solution
 	MatrixType UI(U.rows()-UB.rows(),1);
 	//solve
-	//UI=(KII.lu()).solve(FI-KIB*UB);
-	Eigen::BiCGSTAB<Eigen::SparseMatrix<double> > solver; solver.compute(KII.sparseView()); UI=solver.solve(FI-KIB*UB);
+	Eigen::BiCGSTAB<MatrixType_S> solver; solver.compute(K); U=solver.solve(F);
 	
 	//gather contributions from UI and UB
 	ii=0; unsigned int iii=0;
@@ -389,11 +368,7 @@ MatrixType Mesh::solve(std::function<double (double,double)> f, std::function<do
 			U(i,0)=UB(ii,0); //if it is Dirichlet take from UB 
 			ii++;
 		}
-		else {
-			U(i,0)=UI(iii,0); //else take from UI
-			iii++;
-		}
-		
+	
 	} //end loop i
 	
 	//print VEM solution on screen
@@ -499,9 +474,9 @@ double Mesh::normInf(MatrixType & uex,MatrixType & u){
 void Mesh::Allnorms(MatrixType & u, MatrixType & uex){
 	
 	
-	MatrixType K=GlobalStiffness([](double x, double y) {return 1.0;},1.0,true,
+	MatrixType_S K=GlobalStiffness([](double x, double y) {return 1.0;},1.0,true,
 		[](double x, double y) {return 0.0;}, [](double x, double y) {return 0.0;});
-	MatrixType M=GlobalMass();
+	MatrixType_S M=GlobalMass();
 
 	//std::cout<<"Exact solution (converted VEM): "<<std::endl<<uex<<std::endl;
 	//std::cout<<"VEM approximation of exact solution (numerical): "<<std::endl<<u<<std::endl;

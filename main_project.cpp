@@ -12,9 +12,9 @@ int main()
 {
 
 
-std::string str="./Meshes/Uniform/16.dat";
+std::string str="./Meshes/Uniform/64.dat";
 MeshReader read(false);
-Mesh m(str,read,2);
+Mesh m(str,read,1);
 //cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
 cout<<"Maximum diameter = "<<m.max_diam()<<endl;
