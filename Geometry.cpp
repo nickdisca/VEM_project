@@ -457,7 +457,6 @@ MatrixType Polygon::ComputeH(unsigned int k, std::function<double (double,double
 	std::vector<std::array<int,2> > degree=Polynomials(k);
 	double diam(diameter());
 	Point C(centroid());
-	double A(area());
 
 	for (unsigned int i=0; i<H.rows(); i++){
 		for (unsigned int j=0; j<H.cols(); j++){
@@ -492,7 +491,6 @@ MatrixType Polygon::ComputeC(unsigned int k){
 	//std::cout<<"Created matrix C with size "<<C.rows()<<" x "<<C.cols()<<std::endl;
 	
 	std::vector<std::array<int,2> > degree=Polynomials(k);
-	double diam(diameter());
 	Point centr(centroid());
 	double A(area());
 
@@ -505,7 +503,7 @@ MatrixType Polygon::ComputeC(unsigned int k){
 			
 			//I can compute the L^2 projection using the dofs
 			if(alpha<k*(k-1)/2) { 
-					if (jj==alpha) 
+					if (jj==(int)alpha) 
 						C(alpha,j)=A;
 					else C(alpha,j)=0.0;
 			}
@@ -533,7 +531,6 @@ MatrixType Polygon::LoadTerm(unsigned int k, std::function<double (double,double
 	std::vector<std::array<int,2> > degree=Polynomials(k);
 	double diam(diameter());
 	Point C(centroid());
-	double A(area());
 
 	for (unsigned int i=0; i<F.rows(); i++){
 		

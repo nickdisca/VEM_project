@@ -16,8 +16,6 @@ SOURCES = $(wildcard *.cpp)
 %.o: %.cpp $(HEADERS)
 	$(CC) -c $(STANDARD) $(INCLUDE) $(CFLAGS) $*.cpp
 
-#.PRECIOUS: $(TARGET) $(OBJECTS)
-
 $(TARGET): $(OBJECTS)
 	$(CC) $(STANDARD) $(INCLUDE) $(OBJECTS) -o $(TARGET)
 

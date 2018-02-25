@@ -1,11 +1,13 @@
 C++ implementation of the VEM in 2D for elliptic (transport-diffusion) problems
 
+COMPILE AND RUN
 To compile the code a Makefile is provided, so simply do:
 make
-
 To run the code, simply run the main program as:
 ./main_project
 
+REQUIREMENTS
+The code makes usage of the C++11 standard and the Eigen library. In particular, in the Makefile one should modify the path_to_eigen (which is now set as /usr/local/include/eigen3)
 
 INPUT
 A mesh file has to be provided in the following format:
@@ -21,7 +23,6 @@ In file main_project.cpp the following data have to be provided:
 OUTPUT
 Once run, the program will produce an output file called output.dat containing the list of points and the corresponding solution as [pointX pointY value]
 
-
-Example:
+EXAMPLE:
 the file mesh_example.dat contains the mesh information for the discretization with a structured mesh of [0,1]x[0,1] made of N^2=16 squares.
 the file output_example.dat contains the numerical results for a VEM discretization with k=1 and exact solution equal to u=x+y
