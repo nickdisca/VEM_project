@@ -1,0 +1,27 @@
+C++ implementation of the VEM in 2D for elliptic (transport-diffusion) problems
+
+To compile the code a Makefile is provided, so simply do:
+make
+
+To run the code, simply run the main program as:
+./main_project
+
+
+INPUT
+A mesh file has to be provided in the following format:
+1. list of points representing the vertexes of the polygons as [pointX pointY]
+2. list of indexes of the vertexes of i-th polygon (connectivity matrix), stored in a counterclockwise way
+3. list of indexes denoting the vertexes which are on the domain boundary
+
+In file main_project.cpp the following data have to be provided:
+1. discretization degree k
+2. name of the file containing the mesh
+2. functions defining the diffusion coefficient, X- and Y- component of the transport term, source term, Dirichlet data, exact solution (to compute discretization error)
+
+OUTPUT
+Once run, the program will produce an output file called output.dat containing the list of points and the corresponding solution as [pointX pointY value]
+
+
+Example:
+the file mesh_example.dat contains the mesh information for the discretization with a structured mesh of [0,1]x[0,1] made of N^2=16 squares.
+the file output_example.dat contains the numerical results for a VEM discretization with k=1 and exact solution equal to u=x+y

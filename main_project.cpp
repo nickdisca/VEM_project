@@ -15,28 +15,24 @@ int main()
 int k=1;
 
 //read mesh from file structured as [list of 2D points; connectivity matrix; indexes of boundary points]
-std::string str="./Meshes/Uniform/64.dat";
+std::string str="./mesh_example.dat";
 MeshReader read(false);
 Mesh m(str,read,k);
 //cout<<m;
 cout<<"Total area = "<<m.area()<<endl;
 cout<<"Maximum diameter = "<<m.max_diam()<<endl;
 
-//example
-//exact solution: sin(2*pi*x)*sin(2*pi*y) for elliptic problem
-double PI=4.0*std::atan(1.0);
-auto f=[PI](double x,double y){return -2.0*PI*(std::cos(2.0*PI*x)*std::sin(2.0*PI*y)-
-	2.0*PI*(x+1.0)*std::sin(2.0*PI*x)*std::sin(2.0*PI*y)-2*PI*(x+1.0)*std::sin(2.0*PI*x)*std::sin(2.0*PI*y))+2.0*PI*
-	(std::cos(2.0*PI*x)*std::sin(2.0*PI*y)+std::sin(2.0*PI*x)*std::cos(2.0*PI*y));};
-auto g=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
-auto uex=[PI](double x,double y){return std::sin(2.0*PI*x)*std::sin(2.0*PI*y);};
-auto mu=[](double x, double y) {return x+1.0;}; double mu_bar=1.5;
-auto beta_x=[](double x, double y) {return 1.0;};
-auto beta_y=[](double x, double y) {return 1.0;};
+//exact solution: x+y for Laplace problem
+auto f=[](double x,double y){return 0.0;};
+auto g=[](double x,double y){return x+y;};
+auto uex=[](double x,double y){return x+y;};
+auto mu=[](double x, double y) {return 1.0;}; double mu_bar=1.0;
+auto beta_x=[](double x, double y) {return 0.;};
+auto beta_y=[](double x, double y) {return 0.;};
 
 
-//solve the problem
-MatrixType U=m.solve(f,g, mu, mu_bar, false, beta_x, beta_y);
+//solve the problem: the bool true if the diffusion coefficient is constant, false otherwise
+MatrixType U=m.solve(f,g, mu, mu_bar, true, beta_x, beta_y);
 
 //compute the norms
 MatrixType UEX=m.VEMConvert(uex);
