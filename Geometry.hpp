@@ -20,11 +20,11 @@ public:
 	void setCoordinates(double x, double y){
 		M_coor[0]=x; M_coor[1]=y;}
 
-	//get the coordinates (stored in the input elements, not as return value)
+	//get the coordinates
 	void getCoordinates(double & x, double & y) const {
 		x=M_coor[0]; y=M_coor[1]; }
 
-	//operator [], const and not const version
+	//operator []
 	double const operator[] (int i) const {return M_coor[i];}
 	double & operator[] (int i) {return M_coor[i];}
 
@@ -34,7 +34,7 @@ public:
 	Point operator *(const double &)const;
 	friend Point operator*(const double &, const Point &);
 
-	//confronto
+	//comparison operator between two points
 	friend bool operator == (Point const & a, Point const & b){return ((a[0]==b[0]) && (a[1]==b[1]));};
 	//friend bool operator == (Point const & a, Point const & b){return (std::abs(a[0]-b[0])<=1e-8 && std::abs(a[1]-b[1])<=1e-8);};
 	friend bool operator <(Point const &f, Point const &s){
@@ -66,10 +66,13 @@ inline  Point operator *(const double & d, const Point & p)
 //END OF CLASS POINT
 
 
+
+
 using MatrixType=Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>;
 
 class Polygon {
 public:
+
 	//standard methods
 	Polygon():vertexes(),pointer(nullptr){};
 	Polygon(const Polygon &)=default; 
@@ -97,22 +100,24 @@ public:
 	Point centroid() const;
 	double diameter() const;
 	
+	//compute normal with respect to edge i
 	Point Normal(unsigned int edge_num);
 
-	//boundary dof
+	//given two vectors of uint and points, assigns them to the class members
 	void setDof(std::vector<unsigned int> const &, std::vector<Point> *);
+	//get the coordinates of the dofs (GLL points)
 	std::vector<Point> getDof() const;
+	//get the indexes of the dofs (GLL points)
 	std::vector<unsigned int> getBDindexes(){return dof;};
 
-	//local matrices
+	//compute local matrices
 	MatrixType ComputeD(unsigned int k);
 	MatrixType ComputeB(unsigned int k);
 	MatrixType ComputeG(unsigned int k);
 	MatrixType LocalStiffness(unsigned int k);
 	MatrixType ComputeH(unsigned int k, std::function<double (double,double)> weight, unsigned int krows, unsigned int kcols);
 	MatrixType ComputeH(unsigned int k, std::function<double (double,double)> weight=[](double x, double y) {return 1.0;}) 
-		{return ComputeH(k,weight,k,k);}
-		
+		{return ComputeH(k,weight,k,k);}	
 	MatrixType ComputeC(unsigned int k);
 	MatrixType LoadTerm(unsigned int k,std::function<double (double,double)> f);
 	MatrixType LocalMass(unsigned int k);
@@ -122,6 +127,7 @@ public:
 		(unsigned int k, std::function<double (double,double)> beta_x,std::function<double (double,double)> beta_y);
 	MatrixType ComputeE(unsigned int k, unsigned int VAR);
 
+	//compute the dofs for a function uex (i.e. compute its VEM approximation)
 	MatrixType LocalConvert(unsigned int k, std::function<double (double,double)> uex);
 
 	//output

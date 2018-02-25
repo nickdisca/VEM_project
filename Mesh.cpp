@@ -13,8 +13,6 @@ pointList(mesh.M_pointList),
 elementList(mesh.M_elementList),
 boundary(mesh.M_boundary),
 num_edges(mesh.M_num_edges),
-//edgeList(mesh.M_edgeList),
-//bEdgeList(mesh.M_bEdgeList),
 m(mesh)
 {};
 
@@ -29,8 +27,6 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 	vector<Polygon> & el(mesh.elementList);
 	ifstream f;
 	string currLine;
-
-	//unsigned int & num_edges(mesh.num_edges);
 
 	f.open(filename.c_str());
 	if (!f.is_open()) {
@@ -47,10 +43,11 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 		stringstream ss(currLine);
 		double X,Y; ss>>X>>Y;
 		char cha; ss>>cha;
-		//ora se tutto va bene sono alla fine della stringa. Se non lo sono ho finito
+
+		//if I am ok I reached end of the string. otherwise go back to beginning of line and break
 		if (!ss.eof()) {cout<<"Total number of points = "<<pl.size()<<endl; f.seekg(oldpos); break;}
 
-		//aggiungi il punto trovato
+		//add point
 		pl.push_back(Point{X,Y});
 
 		if(this->M_verbose) 
@@ -63,49 +60,32 @@ int MeshReader::read(Mesh & m, std::string const & filename){
 		getline(f,currLine);
 		stringstream ss(currLine);
 
-		//salva la i-esima riga della matrice
-		//nota: la matrice di connettività parte da 1, a me serve che parta da 0!!!
+		//save i-th line of the matrix
+		//note: connectivity matrix in input starts by 1, but I need it to start from 0
 		std::vector<unsigned int> line;
 		unsigned int d;
 		while (!ss.eof()) {ss>>d; line.push_back(d-1);}
-		line.pop_back(); //se non lo metto, l'ultimo elemento viene contato due volte
+		line.pop_back(); //otherwise I count the last element twice
 
-		//se tutto va bene, la lunghezza deve essere almeno 2. Se non lo è ho finito
+		//if I am ok, the length has to be at least 2. otherwise go back to beginning of line and break
 		if (line.size()<=1) {cout<<"Total number of polygons = "<<el.size()<<endl; f.seekg(oldpos); break;}
 
-		/*
-		for (unsigned int i=1; i<line.size(); ++i){
-			M_edgeList.insert(Edge{line[i],line[i-1]});
-			if(this->M_verbose) 
-				cout<<"Added the edge "<<M_edgeList.size()<<" which is a= "<<line[i]<<" b= "<<line[i-1]<<endl;
-		}
-		M_edgeList.insert(Edge{line[0],line[line.size()]});
-		if(this->M_verbose) 
-			cout<<"Added the edge "<<M_edgeList.size()<<" which is a= "<<line[0]<<" b= "<<line[line.size()]<<endl;
-		*/
 		el.push_back(Polygon(line,&pl));
+
 		if(this->M_verbose) 
 			cout<<"Added the polygon "<<el.size()-1<<" which is "<<Polygon(line,&pl)<<endl;
 
-		//devo capire se ho già inserito il lato o no (to be done)
-		/*
-		for (unsigned int j=0; j<line.size(); j++){
-			if (find(tmp.begin(),tmp.end(),line[j])==tmp.end()) tmp.push_back(line[j]);
-			  find(tmp.begin(),tmp.end(),line[(j+1)%line.size()])==tmp.end()
-				{tmp.push_back(line[j]); tmp.push_back(line[(j+1)%line.size()]); num_edges++;}
-		}
-		*/
 	}
 
-	//reads boundary elements (dovrei salvare gli edges, ma qui ho solo le coordinate dei vertici)
-	//anche qui shift di 1
+	//reads boundary elements (indexes, with shift by one)
 	while (getline(f,currLine)){
+		
 		mesh.boundary.push_back(stoi(currLine)-1);
+		
 		if(this->M_verbose) 
 			cout<<"Added boundary vertex with index "<<mesh.boundary.size()-1<<" which is "<<stoi(currLine)-1<<endl;
 	}
 	cout<<"Total number of boundary vertexes = "<<mesh.boundary.size()<<endl;
-	//cout<<"Total number of edges = "<<num_edges<<endl;
 
 	return 0;
 
