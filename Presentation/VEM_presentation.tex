@@ -1,0 +1,592 @@
+\documentclass[10pt]{beamer}
+
+\usepackage[american]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+%\usepackage{geometry}
+%\usepackage[top=0.6in, bottom=1in, left=0.8in, right=0.8in]{geometry}
+%\geometry{a4paper}
+\usepackage[parfill]{parskip}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{color}
+%\usepackage[tt]{titlepic}
+\usepackage{fancyhdr}
+\usepackage{enumerate}
+%\usepackage{lastpage}
+\usepackage[labelformat=simple]{subcaption}
+%\usepackage{subfigure}
+\usepackage{caption}
+\usepackage{bm}
+\usepackage{verbatim}
+\usepackage{float}
+%\usepackage[numbered,framed]{matlab-prettifier}
+%\usepackage{bigfoot}
+\usepackage{afterpage}
+%\usepackage[]{algorithm2e}
+%\usepackage{algorithm}
+%\usepackage[noend]{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{mathtools}
+
+
+
+
+% Custom Defines
+%\usepackage[comma,numbers,sort&compress]{natbib}
+%\bibliographystyle{plainnat}
+%\usepackage[pdfstartview=FitH,
+%            breaklinks=true,
+%            bookmarksopen=true,
+%            bookmarksnumbered=true,
+%            colorlinks=true,
+%            linkcolor=black,
+%            citecolor=black
+%            ]{hyperref}
+%\newcommand{\rmd}{\textrm{d}}
+%\newcommand{\bi}[1]{{\ensuremath{\boldsymbol{#1}}}}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+
+%\topmargin=-0.45in      %
+%\evensidemargin=0in     %
+%\oddsidemargin=-0.1in      %
+%\textwidth=6.8in        %
+%\textheight=9.2in       %
+%\headsep=0.25in         %
+%\headheight=30.9pt
+
+\graphicspath{{../Figures/}}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+%\epstopdfsetup{outdir=./}
+
+%\numberwithin{equation}{section}
+%\numberwithin{figure}{section}
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+\lstset { %
+	language=C++,
+	backgroundcolor=\color{black!5}, % set backgroundcolor
+	basicstyle=\footnotesize,% basic font setting
+}
+
+%\let\ph\mlplaceholder % shorter macro
+%\lstMakeShortInline"
+
+%\lstset{
+%	style              = Matlab-editor,
+%	basicstyle         = \mlttfamily,
+%	escapechar         = ",
+%	mlshowsectionrules = true,
+%}
+
+\usetheme{Copenhagen}
+
+
+%\let\endtitlepage\relax
+
+\newcommand{\norm}[2]{\left\lVert#1\right\rVert_{#2}}
+\newcommand{\partialdiff}[2]{\frac{\partial#1}{\partial#2}}
+\newcommand{\dof}{\text{dof}}
+\newcommand{\mymatrix}[1]{\mathbf{#1}}
+\newtheorem{thm}{Theorem}
+\newtheorem{prop}{Proposition}
+
+\setbeamertemplate{navigation symbols}{}
+
+\begin{document}
+
+	\title{Virtual Element Methods for elliptic problems}  
+	\author{Niccolò Discacciati}
+	\institute[PoliMi]{Project for the course "Numerical analysis for partial differential equations" \\Politecnico di Milano}
+	\date{March 12, 2018} 
+	
+	\begin{frame}
+		\titlepage
+	\end{frame}
+	
+	\begin{frame}\frametitle{Table of contents}
+		\tableofcontents
+	\end{frame} 
+	
+	
+	\section{Introduction} 
+	
+	\begin{frame}\frametitle{Strengths of the VEM} 
+		\begin{itemize}
+		\item Combine features from different classes of solvers (FV, MFD, FEM, \dots) \\
+		\item Non-polynomial basis and test functions (but exact computations with polynomials) \\
+		\item Generic grids (generic shapes, non-convex polygons, \dots)
+		\end{itemize}
+	\end{frame}
+	\begin{frame} \frametitle{Project description}
+		We provide a C++ implementation for the 2D VEM for\\
+		\vspace{0.5cm}
+		Laplace problem:
+		\begin{equation*}
+		\begin{cases}
+		-\Delta u = f & \mbox{in } \Omega \\
+		u = g & \mbox{on } \partial \Omega
+		\end{cases}
+		\end{equation*}
+		
+		Transport-diffusion problem:
+		\begin{equation*}
+		\begin{cases}
+		-\nabla \cdot (\mu \nabla u)+\beta \cdot \nabla u = f & \mbox{in } \Omega \\
+		u = g & \mbox{on } \partial \Omega
+		\end{cases}
+		\end{equation*}
+		
+		Continuous pb: find $u \in V$ s.t. $a(u,v) = \langle f,v \rangle \quad \forall v \in V$ \\
+		Discrete pb: find $u_h \in V_h$ s.t. $a_h(u_h,v_h) = \langle f_h,v_h \rangle \quad \forall v_h \in V_h $ \\
+	\end{frame}
+	
+	
+	\section{Theoretical background} 
+	\subsection{Building blocks}
+	\begin{frame}\frametitle{Abstract framework}
+	\begin{block}{Abstract Convergence Theorem}
+		Assume that:
+		\begin{itemize}
+			\item \dots
+			\item we define a symmetric bilinear form $a_h$ and a local one $a_h^K$ such that
+			$$a_h(u_h,v_h)=\sum_{K \in \mathcal{T}_h} a_h^K(u_h,v_h)$$
+			\item there exists an integer $k\geq 1$ such that $\mathbb{P}_k(K) \subset V_h|_K$ and
+			\begin{itemize}
+				\item \textit{k-consistency}: for all $p \in \mathbb{P}_k(K)$, $v_h \in V_h|_K$, we have $a_h^K(p,v_h)=a^K(p,v_h)$
+				\item\textit{stability}:
+				$\alpha_{*}a^K(v_h,v_h) \leq a_h^K(v_h,v_h) \leq \alpha^{*}a^K(v_h,v_h)$
+			\end{itemize}
+		\end{itemize}
+	\vspace{0.25cm}
+	Then, the discrete problem has a unique solution.
+	Moreover, for every approximation $u_I \in V_h$, $u_\pi$ that is piecewise in $\mathbb{P}_k(\Omega)$
+	$$\norm{u-u_h}{H_0^1(\Omega)} \leq C \left( 
+	\norm{u-u_I}{H_0^1(\Omega)}+\norm{u-u_\pi}{H_0^1(\Omega)}+\norm{f-f_h}{V'_h} \right)
+	$$
+	\end{block}
+	\end{frame}
+	
+	\begin{frame} \frametitle{Local discrete space}
+		Define, for $k \geq 1$ and a simple polygon $K$, the spaces
+		\begin{equation*}
+		\mathbb{B}_k(\partial K) \coloneqq \lbrace v \in C^0(\partial K) \, : \, v_{|_e} \in \mathbb{P}_k(e), \, \forall e \subset \partial K \rbrace
+		\end{equation*}
+		\begin{equation*}
+		V^{K,k} \coloneqq \lbrace v \in H^1(K) \, : v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v |_K \in \mathbb{P}_{k-2}(K) \rbrace
+		\label{eqn:VKk}
+		\end{equation*}
+		Remarks: 
+		\begin{itemize}
+			\item $\mathbb{P}_k(K) \subset V^{K,k}$
+			\item dim $V^{K,k}= n k + \frac{k(k-1)}{2}$, where $n=\#$ vertices
+		\end{itemize}
+	\end{frame}	
+
+	\begin{frame} \frametitle{Degrees of freedom}
+		Degrees of freedom:
+		\begin{itemize}
+			\item $\mathcal{V}^{K,k}$: the value of $v_h$ at the vertices of the polygon.
+			\item $\mathcal{E}^{K,k} $: for $k>1$, on each edge $e$, the value of $v_h$ at the $k-1$ internal points of the $k+1$ Gauss-Lobatto quadrature rule on $e$.
+			\item $\mathcal{P}^{K,k}$: for $k>1$, the moments
+			$$\frac{1}{|K|} \int p(\mathbf{x})v_h(\mathbf{x})d\mathbf{x} \quad \forall p(\mathbf{x}) \in \mathcal{M}_{k-2}(K)$$
+			where $\mathcal{M}_k(K) \coloneqq \bigg\lbrace \left( \frac{\mathbf{x}-\mathbf{x}_K}{h_K} \right)^\mathbf{s}, |\mathbf{s}|\leq k \bigg\rbrace$
+		\end{itemize}
+		\begin{theorem}
+			The degrees of freedom $\mathcal{V}^{K,k} \cup \mathcal{E}^{K,k} \cup \mathcal{P}^{K,k}$ are unisolvent for $V^{K,k}$.
+		\end{theorem}
+		Remark: this choice for the dofs is not unique.
+	\end{frame}
+	
+%	\begin{frame}\frametitle{Global discrete space}
+%Recall that: $V^{K,k} \coloneqq \lbrace v \in H^1(K) \, : v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v |_K \in \mathbb{P}_{k-2}(K) \rbrace$ \\
+%\vspace{0.5cm}
+%Thus:
+%\begin{equation*}
+%V_h \coloneqq \lbrace v \in H^1_0(\Omega) \ : \ v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v_{|K} \in \mathbb{P}_{k-2}(K), \quad \forall K \in \mathcal{T}_h \rbrace
+%\end{equation*}
+%Remark: dim $V_h= N_V + N_E (k-1) + N_P \frac{k(k-1)}{2}$, where $N_V, \ N_E, \text{ and} \ N_P$ denote the total number of internal vertices, internal edges and elements respectively. \vspace{0.5cm}
+
+%Degrees of freedom: same as the local ones, taking into account the Dirichlet conditions.
+%	\end{frame}
+	
+	\subsection{Projection operators}
+	\begin{frame}\frametitle{The projection operator $\Pi^\nabla$}
+Define $\Pi_k^\nabla : V^{K,k} \rightarrow \mathbb{P}_k(K)$ as
+\begin{equation*}
+\begin{cases}
+	\int_K \nabla \Pi_k^\nabla v_h \cdot \nabla q = \int_K \nabla v_h \cdot \nabla q, \quad \forall q \in \mathbb{P}_k(K) \\
+	P_0(\Pi^\nabla v_h) = P_0(v_h)
+\end{cases}
+\label{eqn:pi_nabla}
+\end{equation*}
+where $P_0$ is defined as
+	\begin{align*}
+	P_0 v_h &\coloneqq \frac{1}{n} \sum_{i=1}^{n} v_h(V_i) \quad \text{if $k=1$ ($\lbrace V_i \rbrace_{i=1}^n$ is the set of vertices)} 
+	\\
+	P_0 v_h &\coloneqq \frac{1}{|K|} \int_{K} v_h \quad \text{if $k\geq 2$} 
+	\end{align*}
+%\begin{theorem}
+%	The operator $\Pi_k^\nabla$ is an orthogonal projection operator. In particular, for a polynomial $q \in \mathbb{P}_k(K)$ we have $\Pi_k^\nabla q = q$.
+%	\label{prop:pi_nabla}
+%\end{theorem}
+Remark: it can be computed using only the dofs of $v_h$. 
+	\end{frame}
+	
+	\begin{frame}\frametitle{The $L^2$-projection operator $\Pi^0$}
+Define $\Pi^0_k: V^{K,k} \rightarrow \mathbb{P}_k(K)$ as
+\begin{equation*}
+\int_K \Pi_k^0 v_h \ q = \int_K v_h \ q, \quad \forall q \in \mathbb{P}_k(K)
+\label{eqn:pi_0}
+\end{equation*}
+%\begin{theorem}
+%	The operator $\Pi_k^0$ is an orthogonal projection. In particular, for a polynomial $q \in \mathbb{P}_k(K)$ we have $\Pi_k^0 q = q$.
+%\end{theorem}
+Remark: not computable for polynomials of degree $k-1, \ k$. \\
+Idea: replace $v_h$ with $\Pi_k^\nabla v_h$ when such polynomials are involved. \\ 
+\begin{equation*}
+\int_K \Pi_k^0 v_h \ m_\alpha = 
+\begin{cases}
+\int_K v_h \ m_\alpha &\mbox{ if deg($m_\alpha$) $\leq$ $k-2$} \\
+\int_K \Pi_k^\nabla v_h \ m_\alpha &\mbox{otherwise}
+\end{cases}
+\end{equation*}
+Remark: we are not introducing errors (modified VEM space).
+	\end{frame}
+	
+	\subsection{Concrete definitions}
+
+\begin{frame} \frametitle{Discrete bilinear form $a_h$}
+Set
+	\begin{equation*}
+	a_h^K(u,v) \coloneqq a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+S^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+	\label{eqn:ah}
+	\end{equation*}	
+	where $S^K(u,v)$ is a symmetric positive definite bilinear form such that
+	\begin{equation*}
+	c_1 \ a^K(v,v) \leq S^K(v,v) \leq c_2 \ a^K(v,v), \quad \forall v \in V^{K,k} \, \text{with } \Pi_k^\nabla v =0
+	\label{eqn:Sk}
+	\end{equation*}
+	
+	\begin{theorem}
+		The bilinear form $a_h^K$ satisfies the $k$-consistency and the stability properties.
+	\end{theorem}
+Motivated by scaling arguments, we define
+\begin{equation*}
+S^K(u,v)=\sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+\end{equation*}
+\end{frame}	
+	
+%\begin{frame} \frametitle{Discrete bilinear form $a_h$}
+%	Let $S^K(u,v)$ be a symmetric positive definite bilinear form such that
+%	\begin{equation*}
+%	c_1 \ a^K(v,v) \leq S^K(v,v) \leq c_2 \ a^K(v,v), \quad \forall v \in V^{K,k} \, \text{with } \Pi_k^\nabla v =0
+%	\label{eqn:Sk}
+%	\end{equation*}
+%	for some constants $c_1,c_2>0$ independent of $K$ and $h_K$. \\
+%	Set
+%	\begin{equation*}
+%	a_h^K(u,v) \coloneqq a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+S^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+%	\label{eqn:ah}
+%	\end{equation*}	
+%	\begin{theorem}
+%		The bilinear form $a_h^K$ satisfies the $k$-consistency and the stability properties.
+%	\end{theorem}
+%\end{frame}
+
+%\begin{frame} \frametitle{Discrete bilinear form $a_h$}
+%Motivated by scaling arguments, we define
+%	\begin{equation*}
+%	S^K(u,v)=\sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+%	\end{equation*}
+%	and finally:
+%	\begin{equation*}
+%	a_h^K(u,v) \coloneqq a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+\sum_{r=1}^{N^K} \dof_r(u-\Pi_k^\nabla u) \ \dof_r(v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+%	\end{equation*}
+%\end{frame}
+
+\begin{frame} \frametitle{Discrete load term $f_h$}
+	Multiple choices are can be made for the approximation of the right-hand-side. \\ 
+	Idea: guarantee optimal error estimates in suitable norms. \\
+	\vspace{0.5cm}
+	\textit{Safe} choice:
+	\begin{equation*}
+	\langle f_h,v \rangle= \langle \Pi_{k}^0 f, v \rangle = \int_K f \ \Pi_{k}^0 v
+	\label{eqn:RHS_impl}
+	\end{equation*}
+\end{frame}
+
+\begin{frame} \frametitle{Error estimates}
+	Preliminary results:
+	\begin{itemize}
+		\item Projection error: under suitable assumptions, there exists $w_\pi$ s.t.
+		$$\norm{w-w_\pi}{0,K}+h_K |w-w_\pi|_{1,K} \leq C h_K^s |w|_{s,K}$$
+		\item Interpolation error: under suitable assumptions, there exists $w_I$ such that
+		$$\norm{w-w_I}{0,K}+h_K |w-w_I|_{1,K} \leq C h_K^s |w|_{s,K}$$
+	\end{itemize}
+	\begin{block}{Error estimates}
+		Under suitable regularity assumptions on $u$ and $f$, with the above-mentioned definitions for $a_h$ and $f_h$ we have
+		$$\norm{u-u_h}{L^2(\Omega)} +h \norm{u-u_h}{H_0^1(\Omega)} \leq C h^{k+1}$$ for a constant $C=C(u,f)>0$ independent of $h$.
+	\end{block}
+\end{frame}
+	
+	\subsection{Extension to elliptic problems}
+	\begin{frame} \frametitle{Extension to elliptic problems}
+		
+With previous definition of $a_h$ we have loss of optimal convergence rate for non-constant coefficients.
+
+Consistency part:
+	\begin{align*}
+	\int_K \mu \nabla u \cdot \nabla v &\simeq \int_K \mu (\Pi^0_{k-1} \nabla u) (\Pi^0_{k-1} \nabla v)& \quad \text{(diffusion part)} 
+	\\
+	\int_K (\beta \cdot \nabla u) \cdot v &\simeq \int_K \beta (\Pi^0_{k-1} \nabla u) (\Pi^0_{k} v) & \quad \text{(transport part)} \\
+	\int_K \alpha u v &\simeq \int_K \alpha (\Pi^0_{k} u) (\Pi^0_{k} v) & \quad \text{(reaction part)} 
+	\end{align*}
+%Stability part: no significant changes, usually done only for diffusive part
+%\begin{equation*}
+%S^K(u,v)=\bar{\mu} \sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+%\label{eqn:Sk_weighted_def}
+%\end{equation*}
+%where $\bar{\mu}$ denotes a constant approximation of $\mu$. \\
+\end{frame}
+
+\begin{frame} \frametitle{Extension to elliptic problems}
+Stability part: no significant changes, usually done only for diffusive part
+\begin{equation*}
+S^K(u,v)=\bar{\mu} \sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+\label{eqn:Sk_weighted_def}
+\end{equation*}
+where $\bar{\mu}$ denotes a constant approximation of $\mu$. 
+\vspace{0.5cm}
+
+Load term: no significant changes.
+
+Error estimates: same as Laplace problem.
+%	\begin{block}{Error estimates}
+%		Under suitable regularity assumptions on the data, with the above-mentioned definitions for $a_h$ and $f_h$ we have
+%		$$\norm{u-u_h}{L^2(\Omega)} +h \norm{u-u_h}{H_0^1(\Omega)} \leq C h^{k+1}$$ for a constant $C=C(u,f,\mu,\beta)>0$ independent of $h$.
+%	\end{block}
+\end{frame}
+	
+	
+	\section{Numerical results} 
+	\begin{frame}\frametitle{Numerical results}
+Validation is performed thanks to:
+	\begin{itemize}
+	\item the scheme being exact for polynomials up to degree $k$
+	\item computation of the discretization error
+	\begin{itemize}
+		\item $H^1_0$-norm: $\norm{u-u_h}{H_0^1(\Omega)}=\norm{\nabla u-\nabla u_h}{L^2(\Omega)}=\left( (\mathbf{u}-\mathbf{u_h})^T \mymatrix{A} (\mathbf{u}-\mathbf{u_h}) \right)^{1/2}$
+		\item $L^2$-norm: $\norm{u-u_h}{L^2(\Omega)}=\left( (\mathbf{u}-\mathbf{u_h})^T \mymatrix{M} (\mathbf{u}-\mathbf{u_h}) \right)^{1/2}$
+		\item $L^\infty$-norm: $\norm{u-u_h}{L^\infty(\Omega)}=\max \lbrace | \hat{\mathbf{u}}-\hat{\mathbf{u}}_\mathbf{h} |\rbrace$ (only boundary dofs)
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame} \frametitle{Meshes}
+
+Domain: $\Omega=[0,1]^2$.
+Meshes: generated with PolyMesher.
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{uniform_grid.eps}
+		\subcaption{Structured mesh}
+		\label{fig:uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{nonuniform_grid.eps}
+		\subcaption{Voronoi mesh}
+		\label{fig:voronoi}
+	\end{subfigure}
+	\caption{Example of the two mesh types used to validate the scheme}
+	\label{fig:meshes}
+\end{figure} 
+
+	\end{frame}
+	
+	\subsection{Laplace problem}
+	
+\begin{frame} \frametitle{Laplace problem, $k=1$}
+	
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_64elem_poly.eps}
+		\subcaption{$u(x,y)=x+y$}
+		\label{fig:polynomial}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_64elem_sin.eps}
+		\subcaption{$u(x,y)=\sin(2\pi x) \sin(2 \pi y)$}
+		\label{fig:sinsin}
+	\end{subfigure}
+	\caption{Contour plot of the discrete solution, generated with uniform meshes consisting of $N^2=64^2$ elements}
+\end{figure} 
+	
+\end{frame}
+
+\begin{frame} \frametitle{Laplace problem, $k=1$, uniform grid}
+	Exact solution: $u(x,y)=\sin(2\pi x) \sin(2 \pi y)$ 
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k1_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k1_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k1_infinity_uniform}
+	\end{subfigure}
+		\caption{Discretization error under $h$-refinement, $k=1$, structured grids.}
+	\label{fig:k1_uniform}
+\end{figure}
+	Superconvergence in $H_0^1$ and $L^\infty$ norms due to solution smoothness and structured mesh. \\
+\end{frame}
+
+\begin{frame} \frametitle{Laplace problem, $k=1$, nonuniform grid}
+	Exact solution: $u(x,y)=\sin(2\pi x) \sin(2 \pi y)$
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_H1_nonuniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k1_H1_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_L2_nonuniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k1_L2_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_infinity_nonuniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k1_infinity_nonuniform}
+	\end{subfigure}
+	\caption{Discretization error under $h$-refinement, $k=1$, Voronoi grids.}
+	\label{fig:k1_nonuniform}
+\end{figure}
+	Loss of superconvergence but remains coherent with the theoretical results.
+\end{frame}
+
+
+\begin{frame} \frametitle{Laplace problem, $k=4$, uniform grid}
+	Exact solution: $u(x,y)=\sin(2\pi x) \sin(2 \pi y)$
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k4_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k4_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k4_infinity_uniform}
+	\end{subfigure}
+	\caption{Discretization error under $h$-refinement, $k=4$, structured grids.}
+	\label{fig:k4_uniform}
+\end{figure}
+	Superconvergence is still present, and becomes even more evident. Using Voronoi meshes, its effect is reduced. \\
+	Remark: memory issues for small $h$.
+\end{frame}
+
+
+\subsection{Transport-diffusion problem}
+
+
+\begin{frame} \frametitle{Transport-diffusion problem, $k=4$, uniform grid}
+	Exact solution: $u(x,y)=\sin(2\pi x) \sin(2 \pi y)$ \\
+	Coefficients: $\mu=x+y+1$, $\beta=(1,1)^T$
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:ell_k4_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:ell_k4_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:ell_k4_infinity_uniform}
+	\end{subfigure}
+	\caption{Discretization error under $h$-refinement, $k=4$, structured grids.}
+	\label{fig:ell_k4_uniform}
+\end{figure}
+	Similar comments with respect to Laplace problem. Polynomially exact, superconvergence with uniform meshes, errors with similar order of magnitude.
+\end{frame}
+
+
+\section{Conclusion}
+\begin{frame} \frametitle{Conclusion}
+
+\begin{itemize}
+	\item Main blocks of the VEM are the projection operators and the usage of non polynomial basis functions.
+	\item VEM are well suited for polygonal meshes, with optimal convergence rates and they are polynomially exact. Superconvergence is present with structured meshes.
+	\item Extensions: other boundary conditions, time-dependent problems, 3D, not second-order problems, \dots
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Bibliography}
+	\begin{thebibliography}{}
+		\scriptsize {
+		\bibitem{Basic_principles} L. Beir\~{a}o da Veiga, F. Brezzi, A. Cangiani, G. Manzini, L. D. Marini, A. Russo. \textit{Basic principles of Virtual Element Methods}. Mathematical Models and Methods in Applied Sciences, 2013. 
+		\bibitem{hitchhiker} L. Beir\~{a}o da Veiga, F. Brezzi, L.D. Marini, A. Russo. \textit{The hitchhiker’s guide to the virtual element method}. Mathematical Models and Methods in Applied Sciences, 2014.
+		\bibitem{Equivalent_proj} B. Ahmed, A. Alsaedi, F. Brezzi, L. D. Marini, A. Russo. \textit{Equivalent projectors for Virtual Element Methods}. Comput. Math. Appl., 2013.
+		\bibitem{General} L. Beir\~{a}o da Veiga, F. Brezzi, L.D. Marini, A. Russo. \textit{Virtual Element Methods for general second order elliptic problems on polygonal meshes}. Mathematical Models and Methods in Applied Sciences, 2016.
+		\bibitem{GeneralOnline} \url{http://www.poems15.gatech.edu/sites/default/files/talks/Russo-slides.pdf}. 2015.
+		\bibitem{polymesher} C. Talischi, G. H. Paulino, A. Pereira, I. F. M. Menezes. \textit{PolyMesher: a general-purpose mesh generator for polygonal elements written in Matlab}. Struct. Multidisc. Optim., 2012.
+	}
+	\end{thebibliography}
+\end{frame}
+
+
+\end{document}  
+

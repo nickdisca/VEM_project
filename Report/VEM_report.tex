@@ -1,0 +1,1152 @@
+\documentclass[10pt]{article}
+
+\usepackage[american]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+%\usepackage{geometry}
+\usepackage[top=0.6in, bottom=1in, left=0.8in, right=0.8in]{geometry}
+\geometry{a4paper}
+\usepackage[parfill]{parskip}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\usepackage{color}
+%\usepackage[tt]{titlepic}
+\usepackage{fancyhdr}
+\usepackage{enumerate}
+%\usepackage{lastpage}
+\usepackage[labelformat=simple]{subcaption}
+%\usepackage{subfigure}
+\usepackage{caption}
+\usepackage{bm}
+\usepackage{verbatim}
+\usepackage{float}
+%\usepackage[numbered,framed]{matlab-prettifier}
+%\usepackage{bigfoot}
+\usepackage{afterpage}
+%\usepackage[]{algorithm2e}
+%\usepackage{algorithm}
+%\usepackage[noend]{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{mathtools}
+
+
+
+
+% Custom Defines
+%\usepackage[comma,numbers,sort&compress]{natbib}
+%\bibliographystyle{plainnat}
+%\usepackage[pdfstartview=FitH,
+%            breaklinks=true,
+%            bookmarksopen=true,
+%            bookmarksnumbered=true,
+%            colorlinks=true,
+%            linkcolor=black,
+%            citecolor=black
+%            ]{hyperref}
+%\newcommand{\rmd}{\textrm{d}}
+%\newcommand{\bi}[1]{{\ensuremath{\boldsymbol{#1}}}}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+
+%\topmargin=-0.45in      %
+%\evensidemargin=0in     %
+%\oddsidemargin=-0.1in      %
+%\textwidth=6.8in        %
+%\textheight=9.2in       %
+%\headsep=0.25in         %
+%\headheight=30.9pt
+
+\graphicspath{{../Figures/}}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+%\epstopdfsetup{outdir=./}
+
+%\numberwithin{equation}{section}
+%\numberwithin{figure}{section}
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+\lstset { %
+	language=C++,
+	backgroundcolor=\color{black!5}, % set backgroundcolor
+	basicstyle=\footnotesize,% basic font setting
+}
+
+%\let\ph\mlplaceholder % shorter macro
+%\lstMakeShortInline"
+
+%\lstset{
+%	style              = Matlab-editor,
+%	basicstyle         = \mlttfamily,
+%	escapechar         = ",
+%	mlshowsectionrules = true,
+%}
+
+
+
+%\let\endtitlepage\relax
+
+\newcommand{\norm}[2]{\left\lVert#1\right\rVert_{#2}}
+\newcommand{\partialdiff}[2]{\frac{\partial#1}{\partial#2}}
+\newcommand{\dof}{\text{dof}}
+\newcommand{\mymatrix}[1]{\mathbf{#1}}
+\newtheorem{theorem}{Theorem}
+\newtheorem{prop}{Proposition}
+
+
+\begin{document}
+{\Large Project for the course `Numerical Analysis for Partial Differential Equations' - Politecnico di Milano} \vspace{10pt} \newline
+{\Large March 5th, 2018} \vspace{10pt} \newline
+{\textbf{\LARGE Virtual Element Methods for elliptic problems} } \vspace{10pt} \newline
+{\Large Author: Niccolò Discacciati} \vspace{10pt} \newline
+{\Large Supervisors: Paola Antonietti, Marco Verani}
+\vspace{30pt}
+
+\section{Introduction} \label{sec:introduction}
+At a first glance, the Virtual Element Methods (VEM) are viewed as a class of solvers for partial differential equations which combine features from different numerical schemes. On one side, they are closely related to Finite Volume Methods and Mimetic Finite Differences (MFD), while on the other hand they share several aspects with Finite Element Methods (FEM). \\
+The first key property is that they can be applied to generic polygonal grids, made of not necessarily convex polygons. This is the main reason why the VEM can be interpreted as an extension of FEM to more general grid elements \cite{Basic_principles}. \\
+Moreover, the basis and test functions (which coincide as in standard Galerkin schemes) are not necessarily polynomials. The exact shape of these functions is not even known inside the elements, motivating the choice of the term \textit{virtual} in the name of the scheme \cite{hitchhiker}. For this reason, we would like to discretize the problem using only their degrees of freedom (dofs). Moreover, the VEM is designed in order to compute exact results whenever one of the two entries of the stiffness bilinear form is a polynomial. In particular, the stiffness matrix is made of two main blocks. The first one is needed to guarantee the expected accuracy and has to be computed exactly, while the second one plays a role for stability issues and can be approximated. \\
+This task is performed by means of suitable \textit{projection operators}, which do not require assumptions on the shape of grid elements (in the sense that they can be defined for triangles, quadrilaterals, pentagons, etc.). Such projections are defined in a way that is able to guarantee good convergence rates. As we shall see, the choice of these operators is different for equations dealing with constant or non-constant coefficients, leading to different approximations of the stiffness matrix. \\
+In this project we provide a C++ implementation of the VEM for elliptic problems in two dimensions, focusing on advection-diffusion equations with generic coefficients. For the sake of simplicity, we consider only Dirichlet boundary conditions, even though an extension to different types is quite straightforward. \\
+The report is structured as follows. In Section \ref{sec:theory_Laplace} we analyze the main theoretical aspects of the method in the simple case of a Laplace problem, which is easier to handle. In Section \ref{sec:theory_general} we generalize to the cases in which a non-constant diffusion coefficient and/or a first-order term are present (i.e. to more generic elliptic problems). We briefly comment on the implementation in Section \ref{sec:implementation}, without aiming to provide a detailed description.
+In Section \ref{sec:results} the numerical results are presented, while some concluding remarks are given in Section \ref{sec:conclusion}.
+
+\newpage
+
+\section{Theoretical background (Laplace problem)} \label{sec:theory_Laplace}
+
+\subsection{The continuous problem}
+Let us consider the boundary value problem \\
+\begin{equation}
+\begin{cases}
+	 -\Delta u = f & \mbox{in } \Omega \\
+	  u = g & \mbox{on } \partial \Omega
+\end{cases}
+\end{equation}
+where $\Omega \subset \mathbb{R}^2$ is a polygonal domain, $f \in L^2(\Omega)$ and $g \in H^{1/2}(\partial \Omega)$. \\
+For the sake of simplicity, we assume that $g=0$. If this is not the case, the Dirichlet data is handled in standard way defining its lifting (see, e.g., \cite{Quarteroni} for further details). \\ 
+Thus, the weak form is simply: \\
+Find $u \in V=H_0^1(\Omega)$ such that
+\begin{equation}
+a(u,v) = (f,v) \quad \forall v \in V
+\label{eqn:Laplace_weak}
+\end{equation}
+where $(\cdot,\cdot)$ denotes the standard $L^2(\Omega)$ product and $a(u,v)=\int_{\Omega} \nabla u \cdot \nabla v$. The following theorem holds:\\
+\begin{theorem}
+	With the above-mentioned assumptions, the problem \eqref{eqn:Laplace_weak} has a unique solution and $\norm{u}{H_0^1(\Omega)} \leq C\norm{f}{L^2(\Omega)}$.
+\end{theorem}
+\begin{proof}
+	The proof follows simply by Lax-Milgram theorem, recalling that $\norm{\nabla u}{L^2(\Omega)}$ is a norm in $H_0^1(\Omega)$, equivalent to the standard one.
+	The bilinear form $a(u,v)$ is continuous, since
+	$$a(u,v)=\int_{\Omega} \nabla u \cdot \nabla v \leq \norm{\nabla u}{L^2(\Omega)}\norm{\nabla v}{L^2(\Omega)}=\norm{u}{H_0^1(\Omega)}\norm{v}{H_0^1(\Omega)}$$
+	It is also coercive, since
+	$$a(u,u)=\norm{\nabla u}{L^2(\Omega)}^2=\norm{u}{H_0^1(\Omega)}^2$$
+	Finally, the right-hand-side is a linear and bounded operator, thanks to Poincaré inequality:
+	$$|(f,v)| \leq C_P \norm{f}{L^2(\Omega)}\norm{v}{H_0^1(\Omega)}$$
+	Thus, the result follows with $C=C_P$.
+\end{proof}
+
+\subsection{The discrete problem: abstract framework}
+
+Consider a sequence of decompositions $\lbrace \mathcal{T}_h \rbrace_h$ of $\Omega$ into elements $K$, where $h$ stands for the maximum of the diameters of the mesh elements.
+We recall that a \textit{simple polygon} is an open simply connected set whose boundary is a non-intersecting line made of a finite number of straight line segments. It is interesting to observe that a simple polygon is not necessarily convex. In the following, we will assume that, for every $h$, the decomposition $\mathcal{T}_h$ is made of a finite number of simple polygons. Since we consider only polygonal domains, then exact decompositions with simple polygons exist. \\
+As in finite elements, we perofrm a splitting of the bilinear form and the $H_0^1(\Omega)$-norm. Indeed, defining
+\begin{equation}
+	a^K(u,v)=\int_{K} \nabla u \cdot \nabla v, \quad \text{and } \quad 
+	|v|_{1,K}^2=a^K(u,u)
+\end{equation}
+we have 
+\begin{equation}
+a(u,v)=\sum_{K \in \mathcal{T}_h} a^K(u,v), \quad \text{and } \quad 
+|v|_{1}^2=\sum_{K \in \mathcal{T}_h} |v|_{1,K}^2
+\label{eqn:splitting}
+\end{equation}
+%Finally, let $\mathcal{E}_h$ be the set of edges of the decomposition $\mathcal{T}_h$. \\
+In this abstract framework, we want to solve the following discrete problem: \\
+Find $u_h \in V_h$ such that
+\begin{equation}
+a_h(u_h,v_h) = \langle f_h,v_h \rangle \quad \forall v_h \in V_h
+\label{eqn:discrete}
+\end{equation}
+In particular, we want to define its main blocks in such a way that it has a unique solution, with stability with respect to the data and \textit{good} approximation properties, namely a \textit{good} convergence rate. Clearly, we need to provide the precise definitions for the space $V_h$, the discrete bilinear form and the discrete right-hand-side. Essentially, these choices characterize the scheme. \\ 
+We denote by $\mathbb{P}_k(D)$ ($k\geq0$) the space of (two-dimensional) polynomials of degree less or equal than $k$ on a generic domain $D$. Conventionally, we define $\mathbb{P}_{-1}(D)=\lbrace0\rbrace$. \\
+We can state the following \\
+\begin{theorem}[Abstract Convergence Theorem]
+	Assume that:
+	\begin{enumerate}
+		\item For each $h$ we have
+		\begin{enumerate}
+			\item\label{ACT:1a} a suitable finite-dimensional space $V_h \subset V$
+			\item\label{ACT:1b} a symmetric bilinear form $a_h:V_h \times V_h \rightarrow \mathbb{R}$, and for each $K \in \mathcal{T}_h$ a bilinear form
+			$a_h^K:V_h|_K \times V_h|_K \rightarrow \mathbb{R}$ such that the splitting
+			$$a_h(u_h,v_h)=\sum_{K \in \mathcal{T}_h} a_h^K(u_h,v_h)$$
+			holds. $V_h|_K$ denotes the restriction of the finite-dimensional space $V_h$ to the mesh element $K$.
+			\item\label{ACT:1c} an element $f_h$ belonging to the dual space $V'_h$ of $V_h$
+		\end{enumerate}
+	\item There exists an integer $k\geq 1$ such that, for all $h$ and for all $K \in \mathcal{T}_h$ we have
+	\begin{enumerate}
+		\item\label{ACT:2a} $\mathbb{P}_k(K) \subset V_h|_K$, i.e. the polynomial functions are included in the finite-dimensional space.
+		\item\label{ACT:2b} \textit{k-consistency}: for all $p \in \mathbb{P}_k(K)$, $v_h \in V_h|_K$ the discrete bilinear form is equal to the continuous one, i.e. $$a_h^K(p,v_h)=a^K(p,v_h)$$
+		\item\label{ACT:2c} \textit{stability}: there exist two constants $\alpha^{*}, \alpha_{*}>0$ independent of $h$ and $K$ such that for every $v_h \in V_h|_K$
+		$$\alpha_{*}a^K(v_h,v_h) \leq a_h^K(v_h,v_h) \leq \alpha^{*}a^K(v_h,v_h)$$
+	\end{enumerate}
+	\end{enumerate}
+	Then, the discrete problem \eqref{eqn:discrete} has a unique solution. \\
+	Moreover, for every approximation $u_I \in V_h$, $u_\pi$ that is piecewise in $\mathbb{P}_k(\Omega)$, of the exact solution $u$ of problem \eqref{eqn:Laplace_weak}, we have
+	$$\norm{u-u_h}{H_0^1(\Omega)} \leq C \left( 
+	\norm{u-u_I}{H_0^1(\Omega)}+\norm{u-u_\pi}{H_0^1(\Omega)}+\mathcal{F}_h \right)
+	$$
+	where $C=C(\alpha^*,\alpha_*)$ and $\mathcal{F}_h=\norm{f-f_h}{V'_h}$.
+	\label{thm:ACT}
+\end{theorem}
+\begin{proof}
+	First, observe that the local bilinear form $a_h^K(u_h,v_h)$ is continuous, since
+	\begin{equation}
+	a_h^K(u_h,v_h) \leq (a_h^K(u_h,u_h))^{1/2}(a_h^K(v_h,v_h))^{1/2} \leq \alpha^*(a^K(u_h,u_h))^{1/2}(a^K(v_h,v_h))^{1/2} = \alpha^* |u_h|_{1,K} |v_h|_{1,K} 
+	\label{eqn:continuity_ah}
+	\end{equation}
+	thanks to Cauchy-Schwarz inequality and assumption \eqref{ACT:2c}. \\
+	Now, existence and uniqueness of problem \eqref{eqn:discrete} follow once more from Lax-Milgram theorem, since $V_h$ is an Hilbert space. The bilinear form $a_h(u_h,v_h)$ is continuous, since
+	\begin{align*}
+	a_h(u_h,v_h) &= \sum_{K \in \mathcal{T}_h} a_h^K(u_h,v_h)  & \text{(assumption \eqref{ACT:1b})}\\
+	&\leq \alpha^* \sum_{K \in \mathcal{T}_h} a^K(u_h,v_h) & \text{(assumption \eqref{ACT:2c})}\\
+	&=\alpha^* a(u_h,v_h)   & \text{(equation \eqref{eqn:splitting})} \\
+	&\leq \alpha^* \norm{u_h}{H_0^1(\Omega)} \norm{v_h}{H_0^1(\Omega)} & \text{(Cauchy-Schwarz)}
+	\end{align*} 
+	Reasoning in a similar fashion, the bilinear form is also coercive:
+	\begin{align*}
+	a_h(u_h,u_h) &= \sum_{K \in \mathcal{T}_h} a_h^K(u_h,u_h)  & \text{(assumption \eqref{ACT:1b})}\\
+	&\geq \alpha_* \sum_{K \in \mathcal{T}_h} a^K(u_h,u_h) & \text{(assumption \eqref{ACT:2c})}\\
+	&=\alpha_* a(u_h,u_h)   & \text{(equation \eqref{eqn:splitting})} \\
+	&= \alpha_* \norm{u_h}{H_0^1(\Omega)}^2 & \text{(definition of a(u,v))}
+	\end{align*}
+
+	Finally, thanks to assumption \eqref{ACT:1c}, the right-hand-side is a linear and continuous operator. Therefore we have existence and uniqueness of the discrete solution. \\
+	Now, let $u_I \in V_h$ and a piecewise $u_\pi$ be approximations of the exact solution. Set $\delta_h \coloneqq u_h-u_I$. Then,
+	\begin{align*}
+		\alpha_* \norm{\delta_h}{H_0^1(\Omega)}^2 &\leq a_h(\delta_h,\delta_h) & \tag{coercivity of $a_h$} \\
+		&=a_h(u_h,\delta_h)-a_h(u_I,\delta_h) & \tag{definition of $\delta_h$} \\
+		&= \langle f_h,\delta_h \rangle-\sum_{K}a_h^K(u_I,\delta_h) & \tag{equation \eqref{eqn:discrete} and assumption \eqref{ACT:1b}} \\
+		&= \langle f_h,\delta_h \rangle-\sum_{K} \left( a_h^K(u_I-u_\pi,\delta_h)+a_h^K(u_\pi,\delta_h) \right) & \tag{$\pm u_\pi$} \\
+		&= \langle f_h,\delta_h \rangle-\sum_{K} \left( a_h^K(u_I-u_\pi,\delta_h)+a^K(u_\pi,\delta_h) \right) & \tag{assumption \eqref{ACT:2b}} \\
+		&= \langle f_h,\delta_h \rangle-\sum_{K} \left( a_h^K(u_I-u_\pi,\delta_h)+a^K(u_\pi-u,\delta_h) \right)-a(u,\delta_h) & \tag{$\pm u$ and equation \eqref{eqn:splitting}} \\
+		&= \langle f_h,\delta_h \rangle-\sum_{K} \left( a_h^K(u_I-u_\pi,\delta_h)+a^K(u_\pi-u,\delta_h) \right)-(f,\delta_h) & \tag{equation \eqref{eqn:Laplace_weak}} \\
+		&\leq |\langle f_h,\delta_h \rangle - (f,\delta_h)|-\sum_{K} \left( a_h^K(u_I-u_\pi,\delta_h)+a^K(u_\pi-u,\delta_h) \right)\\
+		&\leq \mathcal{F}_h \norm{\delta_h}{H_0^1(\Omega)}- a_h(u_I-u_\pi,\delta_h)-a(u_\pi-u,\delta_h) & \tag{assumption \eqref{ACT:1b} definition of dual norm}\\
+		&\leq \norm{\delta_h}{H_0^1(\Omega)} \left( \mathcal{F}_h + \alpha^* \norm{u_I-u_\pi}{H_0^1(\Omega)}+ \norm{u-u_\pi}{H_0^1(\Omega)} \right) & \tag{continuity of the bilinear forms}\\
+		&\leq \norm{\delta_h}{H_0^1(\Omega)} \max \lbrace 1, \alpha^* \rbrace \left( \mathcal{F}_h + \norm{u_I-u_\pi}{H_0^1(\Omega)}+ \norm{u-u_\pi}{H_0^1(\Omega)} \right) \\
+	\end{align*}
+	Simplifying the term $\norm{\delta_h}{H_0^1(\Omega)}$ and defining $\tilde{C} \coloneqq \frac{1}{\alpha_*} \max \lbrace 1, \alpha^* \rbrace$ we end up with
+	$$\norm{\delta_h}{H_0^1(\Omega)} \leq \tilde{C} \left( \mathcal{F}_h + \norm{u_I-u_\pi}{H_0^1(\Omega)}+ \norm{u-u_\pi}{H_0^1(\Omega)} \right) \\
+	$$ 
+	Finally, by the triangle inequality we have
+	$$\norm{u-u_h}{H_0^1(\Omega)} \leq \norm{u-u_I}{H_0^1(\Omega)}+ \norm{u_h-u_I}{H_0^1(\Omega)} \leq C \left( 
+	\norm{u-u_I}{H_0^1(\Omega)}+\norm{u-u_\pi}{H_0^1(\Omega)}+\mathcal{F}_h \right) $$
+	for a suitable constant $C$, that concludes the proof.
+\end{proof}
+Note that, in order to be fully rigorous with the theorem and its proof, one needs to define the broken $H^1$-seminorm and exploit the continuity of the local bilinear form (see \eqref{eqn:continuity_ah}) to end up with the result. We refer to \cite{Basic_principles} for more details. \\
+As mentioned before, this is a purely abstract theorem and relies only on the above-mentioned assumptions. Indeed, we defined neither the discrete bilinear form nor the discrete linear functional, which is done in the following. In particular, we will define the degrees of freedom and the basis functions in order to meet the assumptions of the theorem, which represents the main tool for a theoretical convergence analysis. From this point of view, we remark that the integer $k$ in the assumptions will represent both the discretization degree and the order of convergence of the scheme. \\
+
+\subsection{Degrees of freedom}
+Consider a simple polygon $K$ and let $n$ be the number of its edges (and vertices). Denote with $h_K$ and $\mathbf{x}_k$ its diameter and barycenter respectively.\\
+Let us consider, for $k \geq 1$ and a simple polygon $K$, the space
+\begin{equation}
+	\mathbb{B}_k(\partial K) \coloneqq \lbrace v \in C^0(\partial K) \, : \, v_{|_e} \in \mathbb{P}_k(e), \, \forall e \subset \partial K \rbrace
+	\label{eqn:Bk}
+\end{equation}
+Then, define the restricted finite-dimensional space as
+\begin{equation}
+	V^{K,k} = V_h|_K \coloneqq \lbrace v \in H^1(K) \, : v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v |_K \in \mathbb{P}_{k-2}(K) \rbrace
+	\label{eqn:VKk}
+\end{equation}
+In other words, in each element $K$, the finite-dimensional space is made of the functions which are continuous on the boundary, polynomials on each edge and their Laplace operator is a (lower degree) polynomial inside the element. It is important to note the fact that $\mathbb{P}_k(K) \subset V^{K,k}$, i.e. the polynomials belong to the local discrete space. However, other non-polynomial functions are included in the space, allowing the possibility to deal with more general functions than FEM. \\
+\begin{prop}
+	The space $V^{K,k}$ is a linear space with dimension $N^K \coloneqq \text{dim} \ V^{K,k}= n k + \frac{k(k-1)}{2}$.
+	\label{prop:VKk}
+\end{prop}
+\begin{proof}
+	Since all the involved operators and spaces are linear, clearly $V^{K,k}$ is a linear space. \\
+	The dimension of $\mathbb{B}_k(K)$ is equal to $nk$. Indeed, a continuous function which is a polynomial on each edge is uniquely determined by its value at the vertices and at $k-1$ internal points on each edge. Thus, the dimension is equal to $n+n(k-1)=nk$. \\
+	On the other hand, we have that for each given polynomial $q \in \mathbb{P}_{k-2}(K)$ and for every $g \in \mathbb{B}_k(\partial K)$, there exists a unique function $v \in H^1(K)$ such that $\Delta v=q$ in $K$ and $v=g$ on $\partial K$. This is a consequence of, e.g., Lax-Milgram theorem. Since for a bi-dimensional problem we have that $dim \ \mathbb{P}_k(K)=(k+2)(k+1)/2$, we may conclude that
+	$$dim V^{K,k}= dim \mathbb{B}_k(\partial K)+ dim \mathbb{P}_{k-2}(K) = n k + \frac{k(k-1)}{2}$$
+\end{proof}
+As concrete examples, consider the cases $k=1$ and $k=2$.
+Then, $V^{K,1}$ is made of harmonic functions (remember the convention $\mathbb{P}_{-1}=\lbrace 0 \rbrace$) that are linear on each edge. Such functions are uniquely determined by their values at the vertices of $K$. On the other hand, $V^{K,2}$ is the space of functions that have a constant Laplace operator and that are linear or quadratic on $\partial K$. Moreover, for every constant $q$ and every $g \in \mathbb{B}_2(\partial K)$ there exists a unique function $v \in H^1(K)$ such that $\Delta v=q$ in $K$ and $v=g$ on $\partial K$ in a weak sense. Thus, the dimension of the discrete space is equal to $2n+1$ ($2n$ are needed to define the value at the boundary and one sets the constant value for the Laplace operator). \\
+At this point, we are ready to define the degrees of freedom in $V^{K,k}$. We remark that such a choice is not unique, but it is probably the easiest and most common one. A generic function $v_h \in V^{K,k}$ has the following degrees of freedom:
+\begin{itemize}
+	\item $\mathcal{V}^{K,k}$: the value of $v_h$ at the vertices of the polygon.
+	\item $\mathcal{E}^{K,k} $: for $k>1$, on each edge $e$, the value of $v_h$ at the $k-1$ internal points of the $k+1$ Gauss-Lobatto quadrature rule on $e$.
+	\item $\mathcal{P}^{K,k}$: for $k>1$, the moments
+	$$\frac{1}{|K|} \int p(\mathbf{x})v_h(\mathbf{x})d\mathbf{x} \quad \forall p(\mathbf{x}) \in \mathcal{M}_{k-2}(K)$$
+	where $$\mathcal{M}_k(K) \coloneqq \bigg\lbrace \left( \frac{\mathbf{x}-\mathbf{x}_K}{h_K} \right)^\mathbf{s}, |\mathbf{s}|\leq k \bigg\rbrace$$ is the set of scaled monomials up to degree $k$. A boldface $\mathbf{s}$ denotes a multi-index, $|\mathbf{s}| \coloneqq s_1+s_2$, and $\mathbf{x^s}\coloneqq x_1^{s_1}x_2^{s_2} = x^{s_1}y^{s_2}$.
+\end{itemize}
+It is quite evident that the number of the degrees of freedom is equal to $N^K$, as expected. In particular, the first and the second set denote the \textit{boundary} degrees of freedom, and uniquely determine an element of $\mathbb{B}_k(\partial K)$. Vice versa, the third set stands for the \textit{internal} degrees of freedom, which are needed to fix the requirement regarding the Laplace operator. It can be verified that they are equivalent to prescribe the $L^2$-projection of $v_h$ onto the space $\mathbb{P}_{k-2}(K)$. We refer to Subsection \ref{sub:Pi0} for the definition of the projection operator, while the proof of this result can be easily done applying the definition, verifying that the degrees of freedom are enough to compute the matrix representation of the projection itself. Since it is similar to other proofs that are done in the following, we choose to omit it.\\
+\begin{theorem}
+	The degrees of freedom $\mathcal{V}^{K,k} \cup \mathcal{E}^{K,k} \cup \mathcal{P}^{K,k}$ are unisolvent for $V^{K,k}$, i.e. they uniquely determine a function $v_h \in V^{K,k}$.
+\end{theorem}
+\begin{proof}
+	Consider $v_h \in V^{K,k}$. Clearly, if $v_h = 0$, then the all the degrees of freedom are zero. Thus, we only need to prove the reverse, i.e. if the degrees of freedom of $v_h$ are zero, then $v_h$ is identically zero in $K$. Thus, we assume that the degrees of freedom of $v_h$ are zero.\\
+	Clearly we have 
+	\begin{equation}
+		v_h=0 \qquad \text{on } \partial K
+		\label{eqn:vhzero}
+	\end{equation}
+	since the boundary degrees of freedom uniquely determine a continuous-on-the-boundary function, which is polynomial on each edge. Moreover, we observed that assigning the internal degrees of freedom is equivalent to assign the $L^2$-projection on $\mathbb{P}_{k-2}(K)$. Thus, denoting the projection operator as $P^K_{k-2}$, we have that $P^K_{k-2}v_h=0$ in $K$ and we are left to prove that $v_h=0$ everywhere. In other words, we have to verify that a function which vanishes on the boundary with null projection is identically zero. By Lax-Milgram theorem, it is enough to show that $\Delta v_h=0$ in $K$, recalling that \eqref{eqn:vhzero} holds. \\
+	Given $q \in \mathbb{P}_{k-2}(K)$, consider the following auxiliary problem: find $w \in H_0^1(K)$ such that
+	$$a^K(w,v)=(q,v)_{0,K}, \quad \forall v \in H_0^1(K)$$
+	whose strong form is clearly $$-\Delta w = q \ \text{in } K, \, w=0 \ \text{on } \partial K$$
+	In other words, $w=-\Delta^{-1}(q)$ and the solution is unique by Lax-Milgram theorem. Thus, we can define the mapping $R: \mathbb{P}_{k-2}(K) \rightarrow \mathbb{P}_{k-2}(K)$ as $$R(q) \coloneqq P^K_{k-2}(-\Delta^{-1}(q))=P^K_{k-2}(w)$$
+	With this definition, let us prove that $R$ is an isomorphism. For any $q \in \mathbb{P}_{k-2}(K)$ we have
+	\begin{align*}
+	\int_{K} R(q) q &= \int P^K_{k-2}(-\Delta^{-1}(q)) \ q  & \text{(definition of $R$)}\\
+	&= \int_K P^K_{k-2}(w) \ q  & \text{(definition of $w$)}\\
+	&= \int_K w \ q & \text{(definition of $L^2$-projection)}\\
+	&=a^K(w,w)   & \text{(auxiliary problem)} 
+	\end{align*}
+	We have the following equivalences 
+	$$\lbrace R(q)=0 \rbrace \iff \lbrace a^K(w,w)=0 \rbrace \iff \lbrace w=0 \rbrace \iff \lbrace q=0 \rbrace$$
+	thanks to the previous part of the proof, the definition of $a^K$ and the fact that $w \in H_0^1(K)$. \\
+	Going back to our original problem, we recall that $v_h=0$ on $\partial K$ and $P^K_{k-2} v_h=0$, so that
+	$$0=P^K_{k-2} v_h= P^K_{k-2} (-\Delta^{-1}(-\Delta v_h))=R(-\Delta v_h)$$ thanks to the definitions of $\Delta^{-1}$ and $R$. \\
+	Therefore $R(-\Delta v_h)=0$, which implies $\Delta v_h=0$ exploiting the injectivity of $R$. As mentioned in the first part, this concludes the proof.
+\end{proof}
+We recall that there exist different choices for the degrees of freedom. In particular, the set of Gauss-Lobatto points in the definition of $\mathcal{E}^{K,k}$ could be replaced by any set of $k-1$ distinct points, since the only requirement is to uniquely determine a polynomial on each edge. The advantage of our original choice is that we can compute boundary integrals using only the degrees of freedom and there is no need to interpolate. At the same time, the Laplace operator in $\mathcal{P}^{K,k}$ could be replaced by other second-order elliptic operator, even though it is usually the most natural choice. \\
+More generally, we claim that the mandatory requirements on the discrete space $V^{K,k}$ are
+\begin{itemize}
+	\item $dim V^{K,k}=N^K=\#\text{dofs}$
+	\item $\mathbb{P}_k(K) \subset V^{K,k}$
+	\item $V^{K,k}$ is made of functions that are polynomials on each edge
+	\item The degrees of freedom $\mathcal{V}^{K,k} \cup \mathcal{E}^{K,k} \cup \mathcal{P}^{K,k}$ are unisolvent
+\end{itemize}
+
+\subsection{Construction of the discrete space $V_h$}
+In the previous Subsection, in addition to the degrees of freedom, we defined the local finite-dimensional space $V^{K,k}$ (see \eqref{eqn:VKk}). Therefore, the extension to the whole computational domain is straightforward and reads as
+\begin{equation}
+	V_h \coloneqq \lbrace v \in H^1_0(\Omega) \ : \ v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v_{|K} \in \mathbb{P}_{k-2}(K), \quad \forall K \in \mathcal{T}_h \rbrace
+\end{equation}
+In other words, $V_h$ gathers the contributions from all the local spaces $V^{K,k}$, taking into account for the Dirichlet boundary conditions. \\
+\begin{prop}
+	The space $V_h$ is a linear space with dimension $N^{tot} \coloneqq \text{dim} \ V_h= N_V + N_E (k-1) + N_P \frac{k(k-1)}{2}$, where $N_V, \ N_E, \text{ and} \ N_P$ denote the total number of internal vertices, internal edges and elements respectively.
+\end{prop}
+The proof of this result comes directly from Proposition \ref{prop:VKk}, taking into account for the boundary conditions. This is the reason why in the definition of $N_V$ and $N_E$ we count only the internal vertices and edges respectively. \\
+In agreement with the choice of the local degrees of freedom and the definition of $V_h$ it is quite natural to consider, in $V_h$, the degrees of freedom given by
+\begin{itemize}
+	\item $\mathcal{V}$: the value of $v_h$ at the internal vertices.
+	\item $\mathcal{E}$: for $k>1$, on each internal edge $e$, the value of $v_h$ at the $k-1$ internal points of the $k+1$ Gauss-Lobatto quadrature rule on $e$.
+	\item $\mathcal{P}$: for $k>1$, the moments
+	$$\frac{1}{|K|} \int p(\mathbf{x})v_h(\mathbf{x})d\mathbf{x} \quad \forall p(\mathbf{x}) \in \mathcal{M}_{k-2}(K)$$
+	for each element $K$.
+\end{itemize}
+It is easy to verify that the number of degrees of freedom is equal to the dimension of the discrete space and that they are unisolvent in the whole $V_h$. Moreover, since $V_h \subset V$, a generic function $v_h \in V_h$ is zero on the vertices and edges belonging to $\partial \Omega$.\\
+Now, we need to give an explicit definition for the discrete bilinear form and the right-hand-side appearing in \eqref{eqn:discrete} in such a way that the hypotheses of Theorem \ref{thm:ACT} are satisfied. However, a couple of intermediate steps are required, since we need to define some important projection operators.
+
+\subsection{The projection operator $\Pi^\nabla$}
+Let us define the operator $\Pi_k^\nabla : V^{K,k} \rightarrow \mathbb{P}_k(K)$ as
+\begin{equation}
+	\int_K \nabla \Pi_k^\nabla v_h \cdot \nabla q = \int_K \nabla v_h \cdot \nabla q, \quad \forall q \in \mathbb{P}_k(K)
+	\label{eqn:pi_nabla}
+\end{equation}
+Since only gradients are involved, the previous definition determines $\Pi^\nabla$ up to a constant. To fix this constant, we prescribe a projection onto constants as $P_0: V^{K,k} \rightarrow \mathbb{P}_0(K)$ such that
+\begin{equation}
+	P_0(\Pi^\nabla v_h) = P_0(v_h)
+	\label{eqn:pi_nabla0}
+\end{equation} 
+where $P_0$ is defined as
+\begin{subequations}
+	\begin{align}
+		P_0 v_h &\coloneqq \frac{1}{n} \sum_{i=1}^{n} v_h(V_i) \quad \text{if $k=1$} \label{eqn:pi_nablak1}
+		\\
+		P_0 v_h &\coloneqq \frac{1}{|K|} \int_{K} v_h \quad \text{if $k\geq 2$} \label{eqn:pi_nablak2}
+	\end{align}
+	\label{eqn:pi_nablak12}
+\end{subequations}
+where $\lbrace V_i \rbrace_{i=1}^n$ denotes the set of vertices of $K$. \\
+\begin{prop}
+	The operator $\Pi_k^\nabla$ is an orthogonal projection, i.e. it is linear, bounded, idempotent, self-adjoint. In particular, for a polynomial $q \in \mathbb{P}_k(K)$ we have $\Pi_k^\nabla q = q$.
+	\label{prop:pi_nabla}
+\end{prop}
+\begin{proof}
+	Linearity and boundedness are trivial to verify. Symmetry of the integral implies that the operator is self-adjoint. We just need to check idempotency, which is also easy to verify. Indeed, applying twice the definition \eqref{eqn:pi_nabla} we have
+	$$\int_{K} \nabla (\Pi_k^\nabla(\Pi_k^\nabla v_h)) \cdot \nabla q = \int_{K} \nabla (\Pi_k^\nabla v_h) \cdot \nabla q = \int_K \nabla v_h \cdot \nabla q$$
+	which coincide with \eqref{eqn:pi_nabla}. Similarly, the same holds with \eqref{eqn:pi_nablak12}.\\
+	The projection of a polynomial being a polynomial comes from this fact. Equivalently, we can observe that
+	$$\norm{\nabla \Pi_k^\nabla q- \nabla q}{L^2(K)}^2=0$$
+	by applying iteratively the definition. Thus, $\Pi_k^\nabla q = q + C$. However, the constant $C$ is zero because of \eqref{eqn:pi_nablak12}. 
+\end{proof}
+It is important to note that this operator (i.e. its matrix representation) can be computed using only the degrees of freedom of $v_h$. Indeed, we can represent $\Pi_k^\nabla v_h$ in the basis $\mathcal{M}_k(K)$, since it belongs to $\mathbb{P}_k(K)$ as $$\Pi^\nabla v_h= \sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta m_\beta$$and using the definition \eqref{eqn:pi_nabla} with $q=m_\alpha$ we have 
+$$\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta \int_{K}\nabla m_\beta \cdot \nabla m_\alpha = \int_K \nabla v_h \cdot \nabla m_\alpha $$
+Integrating the right-hand-side by parts as
+$$ \int_K \nabla v_h \cdot \nabla m_\alpha = \int_{\partial K} v_h \nabla m_\alpha \cdot \mathbf{n} - \int_K \Delta m_\alpha v_h $$
+we observe that both contributions can be computed exactly. Indeed, the boundary one involves the integration of a polynomial of degree $2k-1$ on each edge, which is performed exactly using the $k+1$ Gauss-Lobatto points (including the vertexes). The internal term is computed using the internal degrees of freedom, since $\Delta m_\alpha \in \mathbb{P}_{k-2}(K)$.
+Moreover, even the left-hand-side (i.e. the integral $\int_{K}\nabla m_\beta \cdot \nabla m_\alpha$) is computable, either by integration by parts or with quadrature formulas. For this reason, the coefficients $s^\beta$ are (formally) known.
+Similarly, for the projection onto constants we obtain
+$$\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta P_0 m_\beta = P_0 v_h $$
+and $s^\beta$ are again computable using the degrees of freedom. We denoted with $m_\alpha$ (non boldface $\alpha$) a polynomial in $\mathcal{M}_k(K)$ with the natural correspondence with a multi-index $\mathbf{\alpha}$ as $1 \leftrightarrow (0,0), \, 2 \leftrightarrow (1,0), \, 3 \leftrightarrow (0,1), \, \dots$.
+
+\subsection{The $L^2$-projection operator $\Pi^0$} \label{sub:Pi0}
+Reasoning as before, we define the operator $\Pi^0_k: V^{K,k} \rightarrow \mathbb{P}_k(K)$ as
+\begin{equation}
+	\int_K \Pi_k^0 v_h \ q = \int_K v_h \ q, \quad \forall q \in \mathbb{P}_k(K)
+	\label{eqn:pi_0}
+\end{equation}
+Clearly, no further conditions need to be prescribed, since the definition is meaningful even for projections onto constants. As expected, we have the following\\
+\begin{prop}
+	The operator $\Pi_k^0$ is an orthogonal projection, i.e. it is linear, bounded, idempotent, self-adjoint. In particular, for a polynomial $q \in \mathbb{P}_k(K)$ we have $\Pi_k^0 q = q$.
+\end{prop}
+The proof is similar to the one done for the operator $\Pi^\nabla$, except for the fact that $L^2$-products are involved instead of the corresponding ones in $H^1_0(K)$. \\
+At this point, one may wonder if the operator $\Pi^0$ is computable using the degrees of freedom. If so, we would be ready to define the approximations of the bilinear form and the load term in \eqref{eqn:discrete}. Unfortunately, this is not possible. \\
+Indeed, reasoning as for the operator $\Pi^\nabla$, we can write the $\Pi^0$ as linear combination of the basis functions as
+$$\Pi^0 v_h= \sum_{\beta=1}^{dim \mathbb{P}_k(K)} t^\beta m_\beta$$
+so that the definition of the $L^2$-projector becomes
+\begin{equation}
+\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta \int_{K} m_\beta \ m_\alpha = \int_K v_h \ m_\alpha
+\label{eqn:decompose_P0}
+\end{equation}
+Even though the integral on the left-hand-side is computable using suitable quadrature formulas, the right-hand-side involves the integral of $v_h$ and a polynomial whose degree could be up to $k$. \\
+If one is interested in computing the operator $\Pi^0_{k-2}$, it turns out that the right-hand-side is computable using only the internal degrees of freedom $\mathcal{P}^{K,k}$ (as we claimed while defining the degrees of freedom). More generally, no problems arise as long as $m_\alpha$ is a polynomial up to degree $k-2$. \\
+In other words, the critical step is to compute $\int_{K} v_h m_\mathbf{\alpha}$ with $|\mathbf{\alpha}|=k-1,k$. To overcome this issue, we rely on the operator $\Pi^\nabla$. We claim that both $\Pi^\nabla v_h$ and $\Pi^0 v_h$ are \textit{good} approximations of $v_h$ itself and they actually coincide with $v_h$ for every $v_h \in \mathbb{P}_k(K)$. Thus, they have to be \textit{close} to each other. Therefore, the idea is to replace $v_h$ with $\Pi_k^\nabla v_h$ for the right-hand-side of \eqref{eqn:decompose_P0} when polynomials with degree $k-1$ or $k$ are involved. Equation \eqref{eqn:decompose_P0} is modified as
+\begin{equation}
+\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta \int_{K} m_\beta \ m_\alpha = 
+	\begin{cases}
+		\int_K v_h \ m_\alpha &\mbox{ if $\alpha \in \lbrack 1, k(k-1)/2 \rbrack$} \\
+		\int_K \Pi_k^\nabla v_h \ m_\alpha &\mbox{ if $\alpha \in \lbrack k(k-1)/2+1, (k+1)(k+2)/2 \rbrack$}
+	\end{cases}
+\label{eqn:decompose_P0mod}
+\end{equation}
+In this way the right-hand-side is always computable. One may claim that by approximating $v_h$ with its projection $\Pi_k^\nabla v_h$ we are introducing small errors in the computations. However this is not the case. A detailed analysis of this phenomenon is presented in \cite{Equivalent_proj} and relies on the definition of a modified space $W_h$. The properties of the its restricted-to-$K$ version $W^{K,k}$ are similar to the ones of $V^{K,k}$. More precisely, it is defined by two steps:
+\begin{itemize}
+	\item \textit{Enlarge} $V^{K,k}$ by setting
+	$$\tilde{V}^{K,k}
+	\coloneqq \lbrace v \in H^1(K) \, : v_{|\partial K} \in \mathbb{B}_k(\partial K), \, \Delta v |_K \in \mathbb{P}_{k}(K) \rbrace $$
+	\item \textit{Restrict} $\tilde{V}^{K,k}$ to a subspace $W^{K,k}$ having the same dimension (and degrees of freedom) of $V^{K,k}$ with the desired property
+	\begin{equation}
+	\int_K w_h \ m_\mathbf{\alpha} = \int_K \Pi^\nabla w_h \ m_\mathbf{\alpha}, \quad |\mathbf{\alpha}|=k-1,k, \, w_h \in W^{K,k}
+	\label{eqn:WKk}
+	\end{equation}
+	More precisely, we define
+	$$W^{K,k} \coloneqq \lbrace w_h \in \tilde{V}^{K,k} \ : \ \text{\eqref{eqn:WKk} holds } \rbrace $$
+\end{itemize}
+Since the degrees of freedom of a function $v_h \in V_h$ and $w_h \in W_h$ are the same, we can compute the $L^2$-projection without errors, interpreting the degrees of freedom of $v_h$ as the ones of a function $w_h$. \\
+As a side remark, we observe that the defined projection operators are closely related (as expected), and they actually coincide for $k=1$ and $k=2$, as proven in \cite{hitchhiker}.
+At this point, we are ready to define the building blocks of the discrete problem \eqref{eqn:discrete}.
+
+\subsection{Construction of the discrete bilinear form $a_h$}
+Let us start by stating the following result: \\
+\begin{prop}
+	For any $u,v \in V^{K,k}$, the following identity holds:
+	\begin{equation}
+	a^K(u,v)=a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+a^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v)
+	\label{eqn:identity}
+	\end{equation}
+	\label{prop:identity}
+\end{prop}
+\begin{proof}
+	Essentially, the proof is a consequence of the definition \eqref{eqn:pi_nabla}. Indeed,
+	\begin{align*}
+	a^K(u,v) &= \int_K \nabla u \cdot \nabla v \\
+	&= \int_K \nabla (\Pi^\nabla u + u - \Pi^\nabla u) \cdot \nabla (\Pi^\nabla v + v - \Pi^\nabla v)\\
+	&=  \int_K \nabla \Pi^\nabla u \cdot \nabla \Pi^\nabla v + \nabla (u- \Pi^\nabla u) \cdot \nabla (v- \Pi^\nabla v) +\\ & \hspace{0.5cm} + \nabla \Pi^\nabla u \cdot \nabla (v - \Pi^\nabla v) + \nabla (u - \Pi^\nabla u) \cdot \nabla \Pi^\nabla v\\
+	&=\int_K \nabla \Pi^\nabla u \cdot \nabla \Pi^\nabla v + \nabla (u- \Pi^\nabla u) \cdot \nabla (v- \Pi^\nabla v)\\
+	&=a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+a^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v)
+	\end{align*} 
+	where the equalities come from: definition of $a^K$, $\pm \Pi^\nabla u$ and $\pm \Pi^\nabla v$, linearity in both arguments, definition of the projection operator $\Pi^\nabla$, definition of $a^K$.
+\end{proof}
+We recall that we want to build the bilinear form in such a way that the assumptions of the Abstract Convergence Theorem (Theorem \eqref{thm:ACT}) are satisfied. In particular, $k$-consistency and stability property need to be verified, so that we recall them hereunder:
+\begin{itemize}
+	\item \textit{k-consistency}: for all $p \in \mathbb{P}_k(K)$, $v \in V^{K,k}$ we have $a_h^K(p,v)=a^K(p,v)$
+	\item \textit{stability}: there exist two constants $\alpha^{*}, \alpha_{*}>0$ independent of $h$ and $K$ such that for every $v \in V^{K,k}$ we have
+	$\alpha_{*}a^K(v,v) \leq a_h^K(v,v) \leq \alpha^{*}a^K(v,v)$
+\end{itemize}
+In order to guarantee consistency, a natural choice, motivated by Proposition \ref{prop:pi_nabla} is to define $a^K_h(u,v)=a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)$. However, this choice does not guarantee stability, and another term has to be added. \\
+Let $S^K(u,v)$ be a symmetric positive definite bilinear form such that
+\begin{equation}
+	c_1 \ a^K(v,v) \leq S^K(v,v) \leq c_2 \ a^K(v,v), \quad \forall v \in V^{K,k} \, \text{with } \Pi_k^\nabla v =0
+	\label{eqn:Sk}
+\end{equation}
+for some constants $c_1,c_2>0$ independent of $K$ and $h_K$. \\
+Finally, set
+\begin{equation}
+	a_h^K(u,v) \coloneqq a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+S^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+	\label{eqn:ah}
+\end{equation}
+Note that definition \eqref{eqn:ah} mimics the identity proven in Proposition \eqref{eqn:identity}. Moreover, the discrete bilinear form is made of two parts. The first one ensures consistency and is computed exactly (i.e. is the same term appearing in \eqref{eqn:identity}), while the second one is linked to the stability property and it is an \textit{approximation} of the term which is present in \eqref{eqn:identity}. \\
+\begin{theorem}
+	The bilinear form defined in \eqref{eqn:ah} satisfies the $k$-consistency and the stability properties.
+\end{theorem}
+\begin{proof}
+	Let us prove the consistency property first. Thus, consider a polynomial $q \in \mathbb{P}_k(K)$ and remember that $\Pi^\nabla q = q$ thanks to Proposition \ref{prop:pi_nabla}. Thus, $S^K(q-\Pi_k^\nabla q, v-\Pi_k^\nabla v)=0$ and $$a^K(\Pi_k^\nabla q, \Pi_k^\nabla v)=a^K(q, \Pi_k^\nabla v)=a^K(q,v)$$ The results follows easily.
+	In order to prove stability, observe that
+	\begin{align*}
+	a_h^K(v,v) &\leq a^K(\Pi_k^\nabla v, \Pi_k^\nabla v)+c_2 a^K(v-\Pi_k^\nabla v, v-\Pi_k^\nabla v)
+	& \text{(equation \eqref{eqn:Sk})}\\
+	&\leq \max \lbrace 1,c_2 \rbrace \left( a^K(\Pi_k^\nabla v, \Pi_k^\nabla v)+a^K(v-\Pi_k^\nabla v, v-\Pi_k^\nabla v) \right)\\
+	&= \max \lbrace 1,c_2 \rbrace \ a^K(v,v)  & \text{(proposition \ref{prop:identity})}\\
+	\end{align*}
+	Similarly, we have
+	\begin{align*}
+	a_h^K(v,v) &\geq a^K(\Pi_k^\nabla v, \Pi_k^\nabla v)+c_1 a^K(v-\Pi_k^\nabla v, v-\Pi_k^\nabla v)
+	& \text{(equation \eqref{eqn:Sk})}\\
+	&\geq \min \lbrace 1,c_1 \rbrace \left( a^K(\Pi_k^\nabla v, \Pi_k^\nabla v)+a^K(v-\Pi_k^\nabla v, v-\Pi_k^\nabla v) \right)\\
+	&= \min \lbrace 1,c_1 \rbrace \ a^K(v,v)  & \text{(proposition \ref{prop:identity})}\\
+	\end{align*}
+	so that the stability property is proven by choosing $\alpha^*=\max \lbrace 1,c_2 \rbrace$ and $\alpha_*=\min \lbrace 1,c_1 \rbrace$.
+\end{proof}
+We are still left to choose $S^K$. To be consistent with the definition, it is clear that $S^K$ must scale like $a^K$ on the kernel of $\Pi_k^\nabla$. \\
+Practically, we need to compute the stiffness bilinear form only for some suitable basis functions, as it is done in standard FEM. Therefore, we focus on them. In our context, we choose the Lagrangian basis $\lbrace \phi_i \rbrace_{i=1}^{N^K}$, which satisfies the property
+$$\dof_i(\phi_j)=\delta_{ij}, \quad \forall i,j=1,\dots,N^K$$ 
+where we denoted by $\dof_i:V^{K,k}\rightarrow \mathbb{R}$ the operator that, given $v_h \in V^{K,k}$, returns its $i$-th degree of freedom. Clearly, $i=1,\dots,N^K=dim \ V^{K,k}$.
+We have the following preliminary results: \\
+\begin{prop}
+	The degrees of freedom given by $\mathcal{V}^{K,k},\mathcal{E}^{K,k},\mathcal{P}^{K,k}$ scale as 1, i.e. they are invariant under rescaling of spatial coordinates. \\
+	Moreover, the continuous bilinear form $a^K(\phi_i,\phi_i)$ also scales as 1.
+	\label{prop:scaling}
+\end{prop}
+\begin{proof}
+	Let $\hat{K}$ be a domain and consider the change of variables $\mathbf{x} = h \hat{\mathbf{x}}$ that maps  $\hat{K}$ onto another domain $K$. Assume $h \neq 1$. We may think of $\hat{K}$ as an element belonging to a suitable mesh. \\
+	For each (basis) function $\hat{\phi}_i$ we set $\phi_i({\mathbf{x}})=\hat{\phi_i}({\hat{\mathbf{x}}})=\hat{\phi_i}({\mathbf{x}/h})$. \\
+	Clearly, if $\hat{\phi}_i$ is a basis function corresponding to a boundary degree of freedom, then $\dof_i(\hat{\phi_i})=\dof_i(\phi_i)=1$ since the change of variable maps the points of $\hat{K}$ to the corresponding ones in $K$, and there is nothing to prove.\\
+	Vice versa, if $\hat{\phi}_i$ corresponds to an internal degree of freedom and we suppose that $$\frac{1}{|\hat{K}|}\int_{\hat{K}} \hat{\phi_i}(\hat{\mathbf{x}}) \left( \frac{\hat{\mathbf{x}}-\hat{\mathbf{x}}_{\hat{K}}}{h_{\hat{K}}} \right)^\mathbf{\alpha} d\hat{\mathbf{x}}=1$$ Then apply the above-mentioned change of variables, obtaining $|K|=h^2|\hat{K}|, \ h_K=h h_{\hat{K}}, \ d\mathbf{x}=h^2 d\hat{\mathbf{x}}$, ending up with
+	$$\frac{1}{|K|}\int_{K} \phi_i(\mathbf{x}) \left( \frac{\mathbf{x}-\mathbf{x}_{K}}{h_{K}} \right)^\mathbf{\alpha} d\mathbf{x}=1$$
+	which proves the first part. \\
+	Similarly, we have that
+	\begin{align*}
+	\hat{a}^K(\hat{\phi_i},\hat{\phi_i})&=\int_{\hat{K}} \nabla \hat{\phi_i}(\mathbf{\hat{x}}) \cdot \nabla \hat{\phi_i}(\mathbf{\hat{x}}) d\hat{\mathbf{x}} \\
+	&= \int_{K} \nabla \phi_i (\mathbf{x}) \cdot \nabla \phi_i (\mathbf{x}) d\mathbf{x} \\
+	&= a^K(\phi_i,\phi_i)
+	\end{align*}
+	by applying the same change of variables. Since no powers of $h$ appear, we conclude that the bilinear form scales as one.
+\end{proof}
+The previous Proposition motivates the following definition for $S^K$:
+\begin{equation}
+	S^K(u,v)=\sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+	\label{eqn:Sk_def}
+\end{equation}
+\begin{prop}
+	$S^K(u,v)$ defined in \eqref{eqn:Sk_def} is a symmetric positive definite bilinear form satisfying property \eqref{eqn:Sk}, i.e.
+	\begin{equation}
+		c_1 a^K(v,v) \leq S^K(v,v) \leq c_2 a^K(v,v), \quad \forall v \in V^{K,k} \, \text{with } \Pi_k^\nabla v =0
+	\end{equation}
+\end{prop}
+\begin{proof}
+	Clearly, $S^K$ is symmetric and linear in both arguments, by the linearity of the operator $\dof_r$. \\
+	Since we are using a Lagrangian basis, we have that
+	$v=\sum_{r=1}^{N^K} dof_r(v) \phi_r=\sum_{r=1}^{N^K} v_r \phi_r$, so that
+	$$S^K(v,v)=\sum_{r=1}^{N^K} ( \dof_r(v) )^2=\sum_{r=1}^{N^K} v_r^2$$
+	so that $S^K$ is always positive for each $v \neq 0$.
+	Now,
+	$$a^K(v,v)=\sum_{r=1}^{N^K} v_r^2 a^K(\phi_r,\phi_r) \leq \max_r \lbrace a^K(\phi_r, \phi_r) \rbrace \sum_{r=1}^{N^K} v_r^2$$
+	which proves the right inequality with $c_2 \coloneqq \max_r \lbrace a^K(\phi_r, \phi_r) \rbrace$ which is independent from $K, \ h_K$ thanks to Proposition \ref{prop:scaling}. \\
+	Similarly,
+	$$a^K(v,v)=\sum_{r=1}^{N^K} v_r^2 a^K(\phi_r,\phi_r) \geq \min_r \lbrace a^K(\phi_r, \phi_r) \rbrace \sum_{r=1}^{N^K} v_r^2$$ 
+	and the left inequality follows setting $c_1 \coloneqq \min_r \lbrace a^K(\phi_r, \phi_r) \rbrace$.
+\end{proof}
+To summarize, we ended up with the following definition of the discrete bilinear form $a_h$:
+\begin{equation*}
+a_h^K(u,v) \coloneqq a^K(\Pi_k^\nabla u, \Pi_k^\nabla v)+\sum_{r=1}^{N^K} \dof_r(u-\Pi_k^\nabla u) \ \dof_r(v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+\end{equation*}
+
+\subsection{Construction of the discrete load term $f_h$}
+Multiple choices are known for the approximation of the right-hand-side. Essentially, it has to be chosen is such a way that we are able to obtain the optimal error estimates in suitable norms. As shown in \cite{Basic_principles}, \cite{Equivalent_proj} it is enough to consider the following approximation
+\begin{equation}
+\langle f_h,v \rangle= 
+\begin{cases}
+\langle \Pi_{k-1}^0 f, v \rangle = \int_K f \ \Pi_{k-1}^0 v &\mbox{ if $k=1$} \\
+\langle \Pi_{k-2}^0 f, v \rangle = \int_K f \ \Pi_{k-2}^0 v &\mbox{ if $k\geq 2$}
+\end{cases}
+\label{eqn:RHS}
+\end{equation}
+in order to obtain the right scaling in the $H^1_0(\Omega)$-norm. \\
+However, this is not enough in order to obtain the optimal estimate in the $L^2(\Omega)$-norm. We would therefore need to approximate the right-hand-side as (see \cite{Equivalent_proj}):
+\begin{equation}
+\langle f_h,v \rangle= 
+\begin{cases}
+\langle \Pi_{k-1}^0 f, v \rangle = \int_K f \ \Pi_{k-1}^0 v &\mbox{ if $k=1,2$} \\
+\langle \Pi_{k-2}^0 f, v \rangle = \int_K f \ \Pi_{k-2}^0 v &\mbox{ if $k\geq 3$}
+\end{cases}
+\label{eqn:RHSL2}
+\end{equation}
+In all the cases, we implemented the following approximation
+\begin{equation}
+	\langle f_h,v \rangle= \langle \Pi_{k}^0 f, v \rangle = \int_K f \ \Pi_{k}^0 v
+	\label{eqn:RHS_impl}
+\end{equation}
+since it gives the optimal convergence rate in both the norms, but it produces a smaller approximation error \cite{hitchhiker}.
+
+\subsection{Error estimates}
+The final step is to state (and prove) the usual error estimates. In particular, we want to exploit the result of Theorem \ref{thm:ACT} as much as possible. \\
+First, let us consider two intermediate results. \\
+\begin{theorem}[Projection error]
+	Assume that there exists $\gamma>0$ such that, for all $h$, each element $K$ in $\mathcal{T}_h$ is star-shaped with respect to a ball of radius greater than $\gamma h_K$. \\
+	Then, there exists a constant $C=C(h,\gamma)$ such that for every $s \in [1,k+1]$ and for every $w \in H^s(K)$ there exists a $w_\pi \in \mathbb{P}_k(K)$ such that
+	$$\norm{w-w_\pi}{0,K}+h_K |w-w_\pi|_{1,K} \leq C h_K^s |w|_{s,K}$$
+	\label{thm:projection}
+\end{theorem}
+Moreover, for every smooth enough $w$ there exists a unique element $w_I \in V^{K,k}$ such that $$\dof_i(w)=\dof_i(w_I), \quad \forall i=1,\dots,N^K$$ More generally: \\
+\begin{theorem}[Interpolation error]
+	Assume that there exists $\gamma>0$ such that, for all $h$, each element $K$ in $\mathcal{T}_h$ is star-shaped with respect to a ball of radius greater than $\gamma h_K$. \\
+	Then, there exists a constant $C=C(h,\gamma)$ such that for every $s \in [2,k+1]$ and for every $h$ and $K \in \mathcal{T}_h$ and for every $w \in H^s(K)$ there exists a $w_I \in V^{K,k}$ such that
+	$$\norm{w-w_I}{0,K}+h_K |w-w_I|_{1,K} \leq C h_K^s |w|_{s,K}$$
+	\label{thm:interpolation}
+\end{theorem}
+The proof of both these results can be found in, e.g., \cite{Brenner}. \\
+At this point, we can state and prove the following important theorem \\
+\begin{theorem}[$H^1(\Omega)$ error estimate]
+	Let $u$ be the solution of \eqref{eqn:Laplace_weak}, and let $u_h \in V_h$ be the solution of the discretized problem \eqref{eqn:discrete} with $a_h$ and $f_h$ defined in \eqref{eqn:ah} and \eqref{eqn:RHS} respectively. \\
+	Assume further that the right-hand side $f$ is smooth enough and that u belongs to $H^{k+1}(\Omega)$. \\
+	Then
+	$$\norm{u-u_h}{H_0^1(\Omega)} \leq C h^k (|u|_{k+1,\Omega}+|f|_{k,\Omega})$$ for a constant $C>0$ independent of $h$.
+\end{theorem}
+\begin{proof}
+	As mentioned before, we want to exploit Theorem \ref{thm:ACT}. Using the results of Theorem \ref{thm:projection} and Theorem \ref{thm:interpolation}, the only part which is left to prove is the estimate for the right-hand-side. \\
+	For $k\geq 2$ we have
+	\begin{align*}
+	|\langle f_h,v_h \rangle - (f,v_h)|&=\bigg\lvert \sum_{K \in \mathcal{T}_h} \int_K (\Pi_{k-2}^0 f - f) v_h \bigg\rvert   & \text{(definition \eqref{eqn:RHS})} \\
+	&=\bigg\lvert \sum_{K \in \mathcal{T}_h} \int_K (\Pi_{k-2}^0 f - f) (v_h-\Pi_0^0 v_h) \bigg\rvert & \text{(definition \eqref{eqn:pi_0})} \\
+	&\leq C \sum_{K \in \mathcal{T}_h} h_K^{k-1}|f|_{k-1,K} \ h_K |v_h|_{1,K}  & \text{(Theorem \ref{thm:projection})}  \\
+	&\leq C h^k \left( \sum_{K \in \mathcal{T}_h} |f|^2_{k-1,K} \right)^{1/2} \norm{v_h}{H_0^1(\Omega)}
+	\end{align*}
+	Thus, by definition of dual norm we end up with
+	$$\mathcal{F}_h \leq C h^k \left( \sum_{K \in \mathcal{T}_h} |f|^2_{k-1,K} \right)^{1/2}$$
+	Vice versa, for $k=1$ we end up with the following estimate (see e.g. \cite{Basic_principles})
+	$$\mathcal{F}_h \leq C h \left( \sum_{K \in \mathcal{T}_h} |f|^2_{1,K} \right)^{1/2}$$
+	Therefore, all the terms appearing in Theorem \ref{thm:ACT} have the right scaling with respect to $h$.
+\end{proof}
+As mentioned, this choices do not guarantee an optimal convergence rate in the $L^2$-norm, since a more accurate approximation of the right-hand-side is needed. The following theorem holds \\
+\begin{theorem} [$L^2(\Omega)$ error estimate]
+	Let $u$ be the solution of \eqref{eqn:Laplace_weak}, and let $u_h \in V_h$ be the solution of the discretized problem \eqref{eqn:discrete} with $a_h$ and $f_h$ defined in \eqref{eqn:ah} and \eqref{eqn:RHSL2} respectively. \\
+	Assume further that $\Omega$ is convex, that the right-hand side $f$ is smooth enough and that u belongs to $H^{k+1}(\Omega)$. \\
+	Then
+	$$\norm{u-u_h}{L^2(\Omega)} \leq C h^{k+1} (|u|_{k+1,\Omega}+|f|_{k,\Omega})$$ for a constant $C>0$ independent of $h$.
+\end{theorem}
+The proof of this result is done using the standard duality argument and can be found in, e.g., \cite{Equivalent_proj}.
+
+\newpage
+
+\section{Theoretical background (elliptic problems)} \label{sec:theory_general}
+\subsection{The continuous problem}
+\begin{equation}
+\begin{cases}
+-\nabla \cdot (\mu \nabla u)+\beta \cdot \nabla u = f & \mbox{in } \Omega \\
+u = g & \mbox{on } \partial \Omega
+\end{cases}
+\end{equation}
+where $\Omega \subset \mathbb{R}^2$ is a polygonal domain, $f \in L^2(\Omega)$ and $g \in H^{1/2}(\partial \Omega)$. Moreover, $\mu=\mu(\mathbf{x})$ and $\beta=(\beta_x(\mathbf{x}), \beta_y(\mathbf{x}))^T$ are smooth enough scalar (resp. vector) valued functions.
+\\
+As it was done for the Laplace problem we can assume $g=0$, leading to the following weak formulation: \\
+Find $u \in V=H_0^1(\Omega)$ such that
+\begin{equation}
+a(u,v) = (f,v) \quad \forall v \in V
+\label{eqn:Elliptic_weak}
+\end{equation}
+where $$a(u,v)=\int_{\Omega} \mu \nabla u \cdot \nabla v + (\beta \cdot \nabla u) v$$
+In order to state a well-posedness result for the continuous problem, different sufficient conditions can be provided. We focus on a simple case, while we refer to \cite{Salsa} and \cite{Quarteroni} for a more detailed theoretical analysis. The following theorem holds:\\
+\begin{theorem}
+	In addition to the assumptions on $f$ and $g$, suppose that $\mu \in L^\infty(\Omega)$ with $\mu(\mathbf{x})\geq\mu_0>0$ and $\beta_x,\beta_y \in L^\infty(\Omega)$ with $\nabla \cdot \beta =0$. Then, the problem \eqref{eqn:Elliptic_weak} has a unique solution and $\norm{u}{H_0^1(\Omega)} \leq C\norm{f}{L^2(\Omega)}$.
+\end{theorem}
+\begin{proof}
+	The proof follows again by Lax-Milgram theorem.
+	The bilinear form $a(u,v)$ is continuous, since
+	\begin{align*}
+	a(u,v)&=\int_{\Omega} \mu \nabla u \cdot \nabla v + (\beta \cdot \nabla u) v \leq \norm{\mu}{\infty} \norm{\nabla u}{L^2(\Omega)}\norm{\nabla v}{L^2(\Omega)}+\norm{\beta}{\infty} C_P \norm{\nabla u}{L^2(\Omega)}\norm{\nabla v}{L^2(\Omega)} \\
+	&\leq M \norm{u}{H_0^1(\Omega)}\norm{v}{H_0^1(\Omega)}
+	\end{align*}
+	choosing $M \coloneqq \max \lbrace \norm{\mu}{\infty}, C_P \norm{\beta}{\infty}, \rbrace$. We denoted by $C_P$ the Poincaré constant. \\
+	$a(u,v)$ is also coercive. Recalling that $w \nabla w=\nabla(w^2/2)$ and the vectorial identity
+	$$\nabla \cdot (\beta w)= \beta \cdot \nabla w + (\nabla \cdot \beta) w$$ we have
+	$$a(u,u)=\int_{\Omega} \mu |\nabla u|^2 + \beta \cdot \nabla \left( \frac{u^2}{2} \right) \geq \mu_0 \norm{u}{H_0^1(\Omega)}^2$$
+	Finally, the right-hand-side is a linear and bounded operator, thanks to Poincaré inequality:
+	$$|(f,v)| \leq C_P \norm{f}{L^2(\Omega)}\norm{v}{H_0^1(\Omega)}$$
+	Thus, by Lax-Milgram theorem we have the result with $C=C_P/\mu_0$.
+\end{proof}
+
+\subsection{The discrete problem}
+Most of the theory we described in the previous Section is still valid. In particular, we observe that the definitions of the discrete space $V_h$, together with its degrees of freedom, is not changed with respect to the Laplace problem. \\
+Even though the discrete problem can still be (formally) formulated as: \\
+Find $u_h \in V_h$ such that
+\begin{equation}
+a_h(u_h,v_h) = \langle f_h,v_h \rangle \quad \forall v_h \in V_h
+\label{eqn:discrete2}
+\end{equation}
+some issues have to be solved:
+\begin{itemize}
+	\item Is the previous definition of the discrete bilinear form $a_h$ still valid? In other words, we would like to define the part of $a_h$ representing diffusion as
+	\begin{equation}
+	a_h^K(u,v) = \int_K \mu \nabla \Pi_k^\nabla u \cdot \nabla \Pi_k^\nabla v+S^K(u-\Pi_k^\nabla u, v-\Pi_k^\nabla v) \quad \forall u,v \in V^{K,k}
+	\label{eqn:ah_false}
+	\end{equation}
+	recalling \eqref{eqn:ah}. We wonder to which extent this definition is well posed.
+	\item How do we treat the transport term?
+	\item What happens to the stability term?
+\end{itemize}
+In \cite{General} it is shown that using definition \eqref{eqn:ah_false} we experience loss of optimal convergence rate in presence of non-constant diffusion coefficients. \\
+We remind that the approximation is made of two parts: the first guarantees consistency, while the second is responsible for stability. Focusing on the former, we have 
+\begin{subequations}
+	\begin{align}
+	\int_K \mu \nabla u \cdot \nabla v &\simeq \int_K \mu (\Pi^0_{k-1} \nabla u) (\Pi^0_{k-1} \nabla v)& \quad \text{(diffusion part)} \label{eqn:diffusion}
+	\\
+	\int_K (\beta \cdot \nabla u) \cdot v &\simeq \int_K \beta (\Pi^0_{k-1} \nabla u) (\Pi^0_{k} v) & \quad \text{(transport part)} \label{eqn:transport} \\
+	\int_K \alpha u v &\simeq \int_K \beta (\Pi^0_{k} u) (\Pi^0_{k} v) & \quad \text{(reaction part)} \label{eqn:reaction}
+	\end{align}
+	\label{eqn:ah_elliptic}
+\end{subequations}
+
+Equation \eqref{eqn:reaction} refers to the discretization performed when a reaction term $\alpha u$ is present in the boundary value problem. This is not strictly required for our case, but it is useful in order to be able to compute the mass matrix and the discretization error in the $L^2$-norm. In \cite{hitchhiker} it is also shown that the discretization of the reaction part is the same in the case of a constant and spatially-variable $\alpha$. \\
+We already know how to compute the required terms using the degrees of freedom, except for the $L^2$-projection of a vector-valued function. Since in our case such vector is the gradient of a function in $V_h$, we are able to show that, even though it projects onto polynomials of degree $k-1$, it can be computed using only the degrees of freedom. Indeed, reasoning in the same fashion of \eqref{eqn:decompose_P0} we have
+$$\sum_{\beta=1}^{dim \mathbb{P}_{k-1}(K)} s^\beta \int_{K} \mathbf{m_\beta} \cdot \mathbf{m_\alpha} = \int_K \nabla v_h \cdot \mathbf{m}_\alpha
+\label{eqn:decompose_P0vec}$$
+where we denoted with a boldface $\mathbf{m}$ a vector whose components are polynomial in $\mathbb{P}_{k-1}^{K}$. Integrating the right-hand-side by parts, we observe that it can be computed exactly using the degrees of freedom, as expected. Vice versa, the integral on the left-hand-side is easily computed. \\
+Now, we focus on the stability term. For most of the cases, we need an additional part only for the diffusion term (see \cite{General}). This is essentially the same as \eqref{eqn:Sk_def}, but we need to \textit{weight} it because of the presence of a non-constant term $\mu$. We define
+\begin{equation}
+S^K(u,v)=\bar{\mu} \sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)
+\label{eqn:Sk_weighted_def}
+\end{equation}
+where $\bar{\mu}$ denotes a constant approximation of $\mu$ as, e.g., its mean value. \\
+Gathering all the terms, we have the following approximation for the discrete bilinear form:
+$$a_h(u,v)=\int_K \left( \mu (\Pi^0_{k-1} \nabla u) (\Pi^0_{k-1} \nabla v) + \beta (\Pi^0_{k-1} \nabla u) (\Pi^0_{k} v) \right) + \bar{\mu} \sum_{r=1}^{N^K} \dof_r(u) \dof_r(v)$$
+The approximation of the right-hand-side is the same that we defined in the previous Section. Again, we implemented \eqref{eqn:RHS_impl} for all the values of $k$. \\
+In this way, we are still able to obtain the optimal scaling, as suggested by the following \\
+\begin{theorem}[Error estimates]
+	Let $u$ be the solution of \eqref{eqn:Elliptic_weak}, and let $u_h \in V_h$ be the solution of the discretized problem \eqref{eqn:discrete2} with $a_h$ and $f_h$ defined in \eqref{eqn:ah_elliptic} and \eqref{eqn:RHSL2} respectively. \\
+	Assume that both $u$ and $f$ are smooth enough to compute the required norms. Then, the problem \eqref{eqn:discrete2} has a unique solution and
+	$$\norm{u-u_h}{L^2(\Omega)}+h\norm{u-u_h}{H_0^1(\Omega)} \leq C h^{k+1} (|u|_{k+1,\Omega}+|f|_{k,\Omega})$$ for a constant $C>0$ independent of $h$.
+\end{theorem}
+Its proof, together with a more detailed theoretical analysis, can be found in \cite{General} and \cite{GeneralOnline}.
+
+\newpage
+
+\section{Implementation} \label{sec:implementation}
+We provide a very brief overview for the implementation of the analyzed scheme. This Section does not add any further complexity and it can be skipped without loss of generality. More details on the implementation can be found in \cite{hitchhiker}. \\
+Clearly, we are interested in computing the operators only for the basis functions $\phi_i$. \\
+Let us start by commenting on the implementation of the projection operator $\Pi^\nabla$. Since the operator maps onto polynomials, we can write the following expansion
+$$\Pi^\nabla \phi_i= \sum_{\beta=1}^{dim \mathbb{P}_k(K)} s_i^\beta m_\beta = \sum_{\beta=1}^{dim \mathbb{P}_k(K)} (\mymatrix{\Pi^\nabla_*})_{\beta i} m_\beta$$
+where $\mymatrix{\Pi^\nabla_*}$ can be interpreted as the matrix representation of $\Pi^\nabla$ in the monomial basis. \\
+Applying definition \eqref{eqn:pi_nabla} with $q=m_\alpha$ we have, for all $i=1,\dots,N^K$, 
+\begin{equation}
+	\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta_i \int_{K}\nabla m_\beta \cdot \nabla m_\alpha = \int_K \nabla \phi_i \cdot \nabla m_\alpha, \quad \forall \alpha=1,\dots,dim \ \mathbb{P}_k(K)
+\end{equation}
+while the projection onto constants $P_0$ leads to
+\begin{equation}
+	\sum_{\beta=1}^{dim \mathbb{P}_k(K)} s^\beta_i P_0 m_\beta = P_0 \phi_i, \quad \forall \alpha=1,\dots,dim \ \mathbb{P}_k(K)
+\end{equation}
+Putting those definitions together in a matrix-vector multiplication framework and defining
+\begin{equation}
+	\mymatrix{G}_{ij} \coloneqq
+	\begin{cases}
+	(\nabla m_i, \nabla m_j)_0 \quad &\mbox{if i>1} \\
+	P_0 m_j  \quad &\mbox{if i=1}
+	\end{cases}	
+\end{equation}
+\begin{equation}
+\mymatrix{B}_{ij} \coloneqq
+\begin{cases}
+(\nabla m_i, \nabla \phi_j)_0 \quad &\mbox{if i>1} \\
+P_0 \phi_j  \quad &\mbox{if i=1}
+\end{cases}	
+\end{equation}
+we get
+\begin{equation}
+	\mymatrix{\Pi^\nabla_*}=\mymatrix{G}^{-1} \mymatrix{B}
+\end{equation}
+It is also useful to compute the matrix representation of the same operator with respect to the Lagrangian basis $\lbrace \phi_i \rbrace_{i=1}^{N^K}$, thinking of $\Pi^\nabla$ as an operator mapping $V^{K,k}$ onto itself. The representation is defined as
+$$\Pi^\nabla \phi_i = \sum_{j=1}^{dim \mathbb{P}_k(K)} (\mymatrix{\Pi^\nabla})_{j i} \phi_j$$ and it can be proven that, defining the matrix representing the \textit{change of basis} as
+\begin{equation}
+\mymatrix{D}_{ij} \coloneqq \dof_i(m_j)
+\end{equation}
+we have
+\begin{equation}
+\mymatrix{\Pi^\nabla}=
+\mymatrix{D} \mymatrix{\Pi^\nabla_*}=\mymatrix{D} \mymatrix{G}^{-1} \mymatrix{B}
+\end{equation}
+Now, we do the same steps for the $L^2$-projection operator $\Pi^0$, with obvious matrix notation. Define
+\begin{equation}
+	\mymatrix{H}_{ij} \coloneqq (m_i,m_j)_0	
+\end{equation}
+\begin{equation}
+\mymatrix{C}_{ij} \coloneqq
+\begin{cases}
+0 \quad &\mbox{if $i \in [1,k(k-1)/2], \ j\neq kn+i$} \\
+|K| \quad &\mbox{if $i \in [1,k(k-1)/2], \ j= kn+i$} \\
+(\mymatrix{H}\mymatrix{\Pi^\nabla_*})_{ij}\quad &\mbox{if $i \in \lbrack k(k-1)/2+1, (k+1)(k+2)/2 \rbrack$}
+\end{cases}	
+\end{equation}
+so that we have 
+\begin{equation}
+\mymatrix{\Pi^0_*}=\mymatrix{H}^{-1} \mymatrix{C}
+\end{equation}
+and
+\begin{equation}
+\mymatrix{\Pi^0}=
+\mymatrix{D} \mymatrix{\Pi^0_*}=\mymatrix{D} \mymatrix{H}^{-1} \mymatrix{C}
+\end{equation}
+As mentioned in Section \ref{sec:theory_general}, we need to compute the $L^2$-projection for the gradient of the basis functions. Once more, the reasoning is the same as before, and it is repeated twice: one for the $x$-derivative and the other for the $y$-derivative, represented in the monomial basis by the matrices $\mymatrix{\Pi}_*^{0,x}$ and $\mymatrix{\Pi}_*^{0,y}$ respectively. Note that, by definition, for a gradient we only need to project onto the space $\mathbb{P}_{k-1}(K)$. Defining
+\begin{equation}
+\mymatrix{E^x}_{ij} \coloneqq \left( \partialdiff{\phi_j}{x}, m_i \right)_0, \quad
+\mymatrix{E^y}_{ij} \coloneqq \left( \partialdiff{\phi_j}{y}, m_i \right)_0	
+\end{equation}
+we have 
+\begin{equation}
+\mymatrix{\Pi^{0,x}_*}=\mymatrix{\hat{H}}^{-1} \mymatrix{E^x}, \quad \mymatrix{\Pi^{0,y}_*}=\mymatrix{\hat{H}}^{-1} \mymatrix{E^y}
+\end{equation}
+where $\mymatrix{\hat{H}}$ is obtained by extracting the first $dim \mathbb{P}_{k-1}(K)$ rows and columns of $\mymatrix{H}$. \\
+Representing these operators in the Lagrangian basis we have to pre-multiply by $\mymatrix{D}$ as before. \\
+We conclude this section by giving the explicit formulas for the local stiffness matrix and load term. \\
+We need some further definitions:
+\begin{equation}
+\mymatrix{\tilde{G}}_{ij} \coloneqq
+(\nabla m_i, \nabla m_j)_0
+\end{equation}
+\begin{equation}
+\mymatrix{H}^{w}_{ij} \coloneqq (w \ m_i,m_j)_0, \quad \text{for a suitable weight $w=w(\mathbf{x})$}	
+\end{equation}
+\begin{equation}
+\mymatrix{f}_{i} \coloneqq (f, m_i)_0	
+\end{equation}
+In case of unitary diffusion coefficient we have
+\begin{equation}
+	\mymatrix{A_h^K}=(\mymatrix{\Pi_*^\nabla})^T \mymatrix{\tilde{G}} (\mymatrix{\Pi_*^\nabla})+(\mymatrix{I}-\mymatrix{\Pi^\nabla})^T(\mymatrix{I}-\mymatrix{\Pi^\nabla})
+	\label{eqn:stiffness}
+\end{equation}
+while for the general case the stiffness matrix can be written as
+\begin{equation}
+\mymatrix{A_h^K}=(\mymatrix{\Pi^{0,x}_*})^T \mymatrix{H}^\mu (\mymatrix{\Pi^{0,x}_*}) + (\mymatrix{\Pi^{0,y}_*})^T \mymatrix{H}^\mu (\mymatrix{\Pi^{0,y}_*}) + \left(
+(\mymatrix{\Pi^{0,x}_*})^T \mymatrix{H}^{\beta_x} \mymatrix{\Pi^{0}} + (\mymatrix{\Pi^{0,y}_*})^T \mymatrix{H}^{\beta_y} \mymatrix{\Pi^{0}} \right)^T+\bar{\mu}(\mymatrix{I}-\mymatrix{\Pi^\nabla})^T(\mymatrix{I}-\mymatrix{\Pi^\nabla})
+\end{equation}
+Finally, the load term is approximated as
+\begin{equation}
+	\mymatrix{f_h^K}= (\mymatrix{\Pi^0_*})^T \mymatrix{f}
+\end{equation}
+
+\newpage
+
+\section{Numerical results} \label{sec:results}
+In this Section we comment on the obtained numerical results. As it was done for the theoretical analysis, we choose to separate the discretization of a Laplace problem and the one related to a more generic elliptic (i.e. transport-diffusion) problem. \\
+In both cases, in order to validate the algorithm, two main strategies can be considered:
+\begin{itemize}
+	\item if the chosen polynomial order is $k$ and the exact solution $u$ is a polynomial of degree less or equal than $k$, we expect the scheme to be exact. Consequently, for polynomial solutions, the error should be below a very low tolerance.
+	\item comparison with the exact solution by means of the discretization error. We may compute it using different norms. Let $u$ and $u_h$ be the exact and numerical solution respectively, and let $\mathbf{u}$ and $\mathbf{u}_h$ be the finite-dimensional vectors of their degrees of freedom. Then we define:
+	\begin{itemize}
+		\item $H^1_0$-norm: $$\norm{u-u_h}{H_0^1(\Omega)}=\norm{\nabla u-\nabla u_h}{L^2(\Omega)}=\left( (\mathbf{u}-\mathbf{u_h})^T \mymatrix{A} (\mathbf{u}-\mathbf{u_h}) \right)^{1/2} $$
+where $\mymatrix{A}$ is the stiffness matrix defined in \eqref{eqn:stiffness}, namely
+	$$\mymatrix{A_h^K}=(\mymatrix{\Pi_*^\nabla})^T \mymatrix{\tilde{G}} (\mymatrix{\Pi_*^\nabla})+(\mymatrix{I}-\mymatrix{\Pi^\nabla})^T(\mymatrix{I}-\mymatrix{\Pi^\nabla})$$
+		\item $L^2$-norm: $$\norm{u-u_h}{L^2(\Omega)}=\left( (\mathbf{u}-\mathbf{u_h})^T \mymatrix{M} (\mathbf{u}-\mathbf{u_h}) \right)^{1/2} $$
+		where $\mymatrix{M}$ is the mass matrix defined as (see \eqref{eqn:reaction} and \cite{hitchhiker}):
+		$$	\mymatrix{M_h^K}=\mymatrix{C}^T \mymatrix{\tilde{H}}^{-1} \mymatrix{C}+|K|(\mymatrix{I}-\mymatrix{\Pi^0})^T(\mymatrix{I}-\mymatrix{\Pi^0})
+		$$
+		\item $L^\infty$-norm: $$\norm{u-u_h}{L^\infty(\Omega)}=\max \lbrace \hat{|\mathbf{u}}-\hat{\mathbf{u}}_\mathbf{h}| \rbrace$$
+		where $\hat{\mathbf{u}}, \ \hat{\mathbf{u}}_\mathbf{h}$ denote the vectors containing only the boundary degrees of freedom $\mathcal{V}$ and $\mathcal{E}$.
+	\end{itemize}
+	More precisely, we compute the discretization error under $h$-refinement, i.e. varying the maximum diameter of the mesh. This is a standard procedure in order to validate a numerical scheme, and we provide more details in the following. We mention that, according to the theoretical results reported in Sections \ref{sec:theory_Laplace} and \ref{sec:theory_general} we expect the following behavior
+		$$\norm{u-u_h}{H^1_0(\Omega)}=\mathcal{O}(h^k), \quad \norm{u-u_h}{L^2(\Omega)}=\mathcal{O}(h^{k+1})$$
+		while for the $L^\infty$-norm we may expect it to behave as $$\norm{u-u_h}{L^\infty(\Omega)}=\mathcal{O}(h^k)$$ even though we have no theoretical evidence for this scaling.
+\end{itemize}
+As a computational domain, we report the results for the unit square $\Omega=[0,1]^2$. 
+All the considered meshes were created using PolyMesher (\cite{polymesher}), a user-friendly \texttt{Matlab} code to generate different types of meshes. We made tests using two sets of grids:
+\begin{enumerate}
+	\item \textit{Structured (uniform) meshes}. We considered grids made by $N^2$ squares, being $N$ the number of 1D intervals on each axis. In this case, $h=\max \lbrace h_K \rbrace$ is constant and equal to $\sqrt{2}/N$. Without loss of generality, in order to visualize the discretization error in structured meshes, $h$ can be defined as $1/N$. An example of such a grid is reported in Figure \ref{fig:uniform}.
+	\item \textit{Voronoi meshes}. We also considered non-uniform meshes made with generic polygons, using a Voronoi-like meshing approach. We refer to \cite{polymesher} for further details on the algorithms. An example of such a grid is reported in Figure \ref{fig:voronoi}. We observe that such meshes combine polygons having different shapes.
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{uniform_grid.eps}
+		\subcaption{Structured mesh}
+		\label{fig:uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{nonuniform_grid.eps}
+		\subcaption{Voronoi mesh}
+		\label{fig:voronoi}
+	\end{subfigure}
+	\caption{Example of the two mesh types used to validate the scheme}
+	\label{fig:meshes}
+\end{figure} 
+
+\subsection{Laplace problem}
+Let us focus on the case $k=1$. We recall that the degrees of freedom are the (internal) vertices.
+We consider the simple Laplace problem
+\begin{equation}
+	\begin{cases}
+	-\Delta u = 0 & \mbox{in } \Omega \\
+	u = x+y & \mbox{on } \partial \Omega
+	\end{cases}
+	\label{eqn:test1}
+\end{equation}
+It is evident that its unique solution is given by
+$$u(x,y)=x+y$$
+which is a degree-1 polynomial. The contour plot of the corresponding discrete solution is shown in Figure \ref{fig:polynomial}. Computing the discretization error in all the previously described norms, the obtained values are always below $1 \cdot 10^{-13}$, as expected. \\
+A more interesting case is the following
+\begin{equation}
+\begin{cases}
+-\Delta u = 2 \cdot 4 \pi^2 \sin(2\pi x) \sin(2 \pi y) & \mbox{in } \Omega \\
+u = \sin(2\pi x) \sin(2 \pi y) & \mbox{on } \partial \Omega
+\end{cases}
+\label{eqn:test2}
+\end{equation}
+whose exact solution is the non-polynomial function
+$$u(x,y)=\sin(2\pi x) \sin(2 \pi y)$$
+Again, the contour plot of the corresponding VEM solution is reported in Figure \ref{fig:sinsin} and it is coherent with the exact solution.
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_64elem_poly.eps}
+		\subcaption{Contour plot of the VEM solution associated to problem \eqref{eqn:test1}, generated with a uniform mesh consisting of $N^2=64^2$ elements}
+		\label{fig:polynomial}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_64elem_sin.eps}
+		\subcaption{Contour plot of the VEM solution associated to problem \eqref{eqn:test2}, generated with a uniform mesh consisting of $N^2=64^2$ elements}
+		\label{fig:sinsin}
+	\end{subfigure}
+\end{figure} 
+For this problem, we compute the discretization error in the previously defined norms. In particular, we selected meshes whose number of elements ranges from $8^2$ to $100^2$. In Figure \ref{fig:k1_uniform} we report the results as the diameter is varied. \\
+Unless stated otherwise, we adopt the following plotting convention: the numerical results are denoted by a blue line, while the expected theoretical behavior is shown with a red line. If needed, a green line is associated with a power of $h$ which is higher (usually by $1$) than the theoretical prediction.
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k1_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k1_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k1_infinity_uniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=1$. All the results are generated using structured grids.}
+	\label{fig:k1_uniform}
+\end{figure}
+To be more precise, we estimate the convergence order with the standard formula
+$$p_i\simeq \frac{\log \left( \frac{err(h_{i+1})}{err(h_{i})}  \right)}{\log \left( \frac{h_{i+1}}{h_{i}}  \right)}, \quad i=1,\dots,N_{simul}-1$$
+where $err(h_{i})$ and $err(h_{i+1})$ denote the errors computed using a mesh size equal to $h_{i}$ and $h_{i+1}$ respectively. The estimated convergence rate can be computed, e.g. by taking the average of all $p_i$ (or a suitable subset). Exploiting this technique, we obtain
+$$p_{H^1_0}=1.9394\simeq2, \quad p_{L^2}=1.9358\simeq2, \quad p_\infty=1.9588\simeq2$$
+On one side, the $L^2$-error behaves as expected, while both the $H^1_0$ and the $L^\infty$ errors decrease quadratically, as opposed to a linear theoretical behavior. This phenomenon is called \textit{superconvergence} and it is usually caused by the regularity of the mesh and the smoothness of the exact solution. \\
+In order to have a confirmation of this fact, we perform the same error analysis using the Voronoi meshes, characterized by maximum diameters $h$ having the same order of magnitude of the ones corresponding to structured meshes. Even though standard convergence analyses are usually done only for structured meshes, we want to verify if the superconvergent behavior is still present. The results are reported in Figure \ref{fig:k1_nonuniform}. 
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_H1_nonuniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k1_H1_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_L2_nonuniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k1_L2_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k1_infinity_nonuniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k1_infinity_nonuniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=1$. All the results are generated using Voronoi grids.}
+	\label{fig:k1_nonuniform}
+\end{figure}
+The estimated orders are
+$$p_{H^1_0}=1.1619\simeq1, \quad p_{L^2}=2.1433\simeq2, \quad p_\infty=1.7298$$
+In this case, both the $H^1_0$ and the $L^2$ norm are coherent with the theoretical results and no superconvergence is present. A relatively strange behavior is found for the $L^\infty$ norm, which appears to have an intermediate power between $1$ and $2$. However, it is reduced with respect to the power obtained with uniform grid ($1.7298$ vs $1.9588$). \\
+Considering again the Laplace problem, we switch to a discretization degree $k=4$. In this case, both $\mathcal{E}$ and $\mathcal{P}$ are nonempty sets.
+\\
+Considering a polynomial exact solution (e.g. $u(x,y)=x^4+y^4$), we are still able to validate the algorithms, since all the errors are of order $10^{-13}$. The plot of the discrete solution is coherent with its analytical counterpart and it is not reported here. \\
+Indeed, we directly switch to problem \eqref{eqn:test2}, which involves trigonometric functions. Again, the contour plot turns out to be similar to Figure \ref{fig:sinsin}, thus we switch directly to the error analysis. Figure \ref{fig:k4_uniform} reports the results, 
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:k4_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:k4_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{k4_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:k4_infinity_uniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=4$. All the results are generated using structured grids.}
+	\label{fig:k4_uniform}
+\end{figure}
+while the estimates give
+$$p_{H^1_0}=4.7156\simeq5, \quad p_{L^2}=5.8512\simeq6, \quad p_\infty=5.4239$$
+The superconvergence phenomenon is still present and it starts to appear even for the $L^2$-norm. To be more precise about the estimates, one should reduce the grid spacing even more. However, this causes memory issues in the implementation, since, for high degrees, a (very) large number of degrees of freedom is involved. \\
+Finally, we mention that performing the error analysis using non uniform meshes, the conclusions are similar to the ones obtained for $k=1$. In particular, for the $H_0^1$ and the $L^2$-norm the convergence rate coincides 
+with the theoretical expectations.
+
+\subsection{Transport-diffusion problem}
+Let us switch to a more general second order elliptic problem, characterized by a non-constant diffusion coefficient and the presence of a transport term.
+In order to slightly vary the analysis with respect to the Laplace problem, we consider the case $k=2$ in order to fully validate the scheme, while we keep the $k=4$ case to perform the error analysis. \\
+Starting with $k=2$, we consider the following problem
+\begin{equation}
+\begin{cases}
+-\nabla \cdot (\mu \nabla u)+\beta \cdot \nabla u = -4-4x-4y & \mbox{in } \Omega \\
+u = x^2+y^2 & \mbox{on } \partial \Omega
+\end{cases}
+\label{eqn:test3}
+\end{equation}
+where $\mu(x,y)=x+y+1$ and $\beta=(1,1)^T$. Clearly, the exact solution is the paraboloid
+$$u(x,y)=x^2+y^2$$ while the contour plot of the VEM solution is shown in Figure \ref{fig:ell_polynomial}. Since the errors have an order of magnitude of $10^{-12}$, the algorithm still behaves perfectly with polynomial functions. \\
+Consider now a similar problem, namely
+\begin{equation}
+\begin{cases}
+-\nabla \cdot (\mu \nabla u)+\beta \cdot \nabla u = f & \mbox{in } \Omega \\
+u = \sin(2\pi x) \sin(2 \pi y) & \mbox{on } \partial \Omega
+\end{cases}
+\label{eqn:test4}
+\end{equation}
+where $\mu(x,y)=x+y+1$ and $\beta=(1,1)^T$. The load term $f$ is chosen in such a way that exact solution is still (see problem \eqref{eqn:test2})
+$$u(x,y)=\sin(2\pi x) \sin(2 \pi y)$$ The contour plot of the discrete solution is shown in Figure \ref{fig:ell_sinsin}, which is, at least from a visual perception, equal to Figure \ref{fig:sinsin}.
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_32elem_poly.eps}
+		\subcaption{Contour plot of the VEM solution associated to problem \eqref{eqn:test3}, generated with a uniform mesh consisting of $N^2=32^2$ elements}
+		\label{fig:ell_polynomial}
+	\end{subfigure}
+	\begin{subfigure}{0.49\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_32elem_sin.eps}
+		\subcaption{Contour plot of the VEM solution associated to problem \eqref{eqn:test4}, generated with a uniform mesh consisting of $N^2=32^2$ elements}
+		\label{fig:ell_sinsin}
+	\end{subfigure}
+\end{figure} 
+The error analyses are performed with the same meshes used for the Laplace problems. The results are reported in Figure \ref{fig:ell_k2_uniform} for structured grids and in Figure \ref{fig:ell_k2_nonuniform} for the Voronoi meshes.
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:ell_k2_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:ell_k2_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:ell_k2_infinity_uniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=2$. All the results are generated using structured grids.}
+	\label{fig:ell_k2_uniform}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_H1_nonuniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:ell_k2_H1_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_L2_nonuniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:ell_k2_L2_nonuniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k2_infinity_nonuniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:ell_k2_infinity_nonuniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=2$. All the results are generated using Voronoi grids.}
+	\label{fig:ell_k2_nonuniform}
+\end{figure}
+The estimated orders are
+$$p_{H^1_0}=2.9346\simeq3, \quad p_{L^2}=3.5685, \quad p_\infty=3.6411$$
+for structured meshes, and
+$$p_{H^1_0}=2.2407\simeq2, \quad p_{L^2}=3.3033\simeq3, \quad p_\infty=3.0367\simeq3$$
+for nonuniform grids. In the former case, the superconvergence is still evident, while its effect is heavily reduced in the latter, at least focusing on the $H_0^1$ and $L^2$ norm. The error in the $L^\infty$ norm converges with an order which is even higher than $3$, i.e. more rapidly than expected (even though we take into account for superconvergence effects). \\
+We switch to the final case $k=4$, which was again validated using suitable polynomial functions. Concerning the error analysis, as usual we report the results in Figure \ref{fig:ell_k4_uniform}.
+\begin{figure}[H]
+	\centering
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_H1_uniform.eps}
+		\subcaption{$H^1_0$-norm}
+		\label{fig:ell_k4_H1_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_L2_uniform.eps}
+		\subcaption{$L^2$-norm}
+		\label{fig:ell_k4_L2_uniform}
+	\end{subfigure}
+	\begin{subfigure}{0.32\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{elliptic_k4_infinity_uniform.eps}
+		\subcaption{$L^\infty$-norm}
+		\label{fig:ell_k4_infinity_uniform}
+	\end{subfigure}
+	\caption{Behavior of the convergence error under $h$-refinement, for a discretization degree $k=4$. All the results are generated using structured grids.}
+	\label{fig:ell_k4_uniform}
+\end{figure}
+Basically, the behavior is similar with respect to the Laplace problem discretized using the same polynomial degree, with a convergence order higher than expected for all the involved norms, since the estimations turn out to be
+$$p_{H^1_0}=4.8242\simeq5, \quad p_{L^2}=5.7096\simeq6, \quad p_\infty=5.2687$$
+
+\subsection{General comments}
+In all the benchmark cases, the convergence rate is (partially) coherent with the theoretical expectations, even though in most of the cases we observe a superconvergence. It is important to remark that in none of the tests the estimated orders are less than the ones predicted by the theory. \\
+One could also compute the full $H^1$-norm gathering the contributions from both the solution and its gradient. It can be verified that it is expected to converge as $\mathcal{O}(h^k)$, since the dominant part is the norm of the gradients (i.e. the $H_0^1$ norm). Indeed, the $L^2$ norm has values which are at least one order of magnitude inferior with respect to the corresponding $H^1_0$ ones. However, the computation of the full norm can be useful whenever the $H^1_0$ one is not equivalent to the $H^1$ one (i.e. we cannot exploit Poincaré inequality), e.g. when Neumann boundary conditions are involved. \\
+As mentioned before, we remark that increasing the discretization order the estimations become more precise, i.e. the error is reduced if the same mesh is considered. The drawback is obviously that, since more degrees of freedom are involved, a larger amount of memory is required to store them (and the local stiffness matrices, load terms, etc.). Therefore we were forced to pick higher values of $h$ in order to avoid memory allocation errors. 
+
+\newpage
+
+\section{Conclusion} \label{sec:conclusion}
+In this report, we introduced the Virtual Element Method, emphasizing its main features. In particular, it is well suited in order to handle general polygonal meshes without losing optimal convergence rates. We showed that the basis functions are more general than polynomials, and their analytical expression may be even unknown. However, it is not required by the scheme, since one simply needs to know the value of these basis functions in suitably defined degrees of freedom. We highlighted the importance of a couple of projection operators, which are responsible of giving an exact bilinear form whenever one of the two input is a polynomial. \\
+Even though most of the theoretical results were given for the Laplace problem, the generalization to more general (elliptic) operators is relatively easy, at least from a global perspective. In particular, in such a context, the $L^2$-projection operator $\Pi^0$ plays a major role. \\
+We numerically validated the scheme using different benchmark tests, built using both polynomial and non polynomial (exact) solutions, with discretization degrees varying from $1$ to $4$. The behavior is coherent with the expectations and in most of the cases an even better convergence rate appears, thanks to mesh regularity and smoothness of the exact solution. We may claim that for uniform meshes we find that the errors behave as
+$$\norm{u-u_h}{H^1_0(\Omega)}=\mathcal{O}(h^{k+1}), \quad \norm{u-u_h}{L^2(\Omega)}=\mathcal{O}(h^{k+2})$$
+at least for high discretization degrees. \\
+Different generalizations can be considered as future extensions of the project. The implementation of boundary conditions which are more generic than the Dirichlet ones is probably the simplest one. Moreover, switching to time-dependent problems is, at least from a theoretical perspective, quite straightforward. Finally, the discretization of more complex problems (e.g. not second order, nonlinear, etc.) and the extension to a 3D case represent more involved generalizations.
+
+
+\begin{thebibliography}{}
+	\bibitem{Basic_principles} L. Beir\~{a}o da Veiga, F. Brezzi, A. Cangiani, G. Manzini, L. D. Marini, A. Russo. \textit{Basic principles of Virtual Element Methods}. Mathematical Models and Methods in Applied Sciences, 2013. 
+	\bibitem{hitchhiker} L. Beir\~{a}o da Veiga, F. Brezzi, L.D. Marini, A. Russo. \textit{The hitchhiker’s guide to the virtual element method}. Mathematical Models and Methods in Applied Sciences, 2014.
+	\bibitem{Equivalent_proj} B. Ahmed, A. Alsaedi, F. Brezzi, L. D. Marini, A. Russo. \textit{Equivalent projectors for Virtual Element Methods}. Comput. Math. Appl., 2013.
+	\bibitem{Brenner} S.C. Brenner, R. L. Scott.
+	\textit{The Mathematical Theory of Finite Element methods}. Texts in applied mathematics, 2008.
+	\bibitem{Salsa} S. Salsa. \textit{Partial differential equations: from modeling to theory}. Springer, 2008.
+	\bibitem{Quarteroni} A. Quarteroni, \textit{Numerical models for differential problems}, Springer, 2014.
+	\bibitem{General} L. Beir\~{a}o da Veiga, F. Brezzi, L.D. Marini, A. Russo. \textit{Virtual Element Methods for general second order elliptic problems on polygonal meshes}. Mathematical Models and Methods in Applied Sciences, 2016.
+	\bibitem{GeneralOnline} \url{http://www.poems15.gatech.edu/sites/default/files/talks/Russo-slides.pdf}. 2015.
+	\bibitem{polymesher} C. Talischi, G. H. Paulino, A. Pereira, I. F. M. Menezes. \textit{PolyMesher: a general-purpose mesh generator for polygonal elements written in Matlab}. Struct. Multidisc. Optim., 2012.
+\end{thebibliography}
+
+
+
+\end{document}  
+

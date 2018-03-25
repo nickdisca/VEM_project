@@ -35,3 +35,7 @@ make.dep
 *.ps
 *.bbl
 *.blg
+*.gz
+
+#pdf
+*.pdf
